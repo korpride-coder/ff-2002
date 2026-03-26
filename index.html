@@ -1,0 +1,1076 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Crypto Trading Tracker</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/3.9.1/chart.min.js"></script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        :root {
+            --primary: #1e40af;
+            --primary-light: #3b82f6;
+            --primary-dark: #1e3a8a;
+            --success: #10b981;
+            --danger: #ef4444;
+            --warning: #f59e0b;
+            --bg-primary: #ffffff;
+            --bg-secondary: #f9fafb;
+            --bg-tertiary: #f3f4f6;
+            --text-primary: #111827;
+            --text-secondary: #6b7280;
+            --border-color: #e5e7eb;
+            --shadow: 0 1px 3px rgba(0,0,0,0.1);
+        }
+
+        @media (prefers-color-scheme: dark) {
+            :root {
+                --primary: #60a5fa;
+                --primary-light: #93c5fd;
+                --primary-dark: #1e40af;
+                --success: #34d399;
+                --danger: #f87171;
+                --warning: #fcd34d;
+                --bg-primary: #1f2937;
+                --bg-secondary: #111827;
+                --bg-tertiary: #374151;
+                --text-primary: #f3f4f6;
+                --text-secondary: #d1d5db;
+                --border-color: #4b5563;
+            }
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background-color: var(--bg-secondary);
+            color: var(--text-primary);
+            overflow-x: hidden;
+        }
+
+        .container {
+            max-width: 600px;
+            margin: 0 auto;
+            padding: 16px;
+        }
+
+        header {
+            background: var(--bg-primary);
+            padding: 20px 16px;
+            border-bottom: 1px solid var(--border-color);
+            position: sticky;
+            top: 0;
+            z-index: 100;
+        }
+
+        header h1 {
+            font-size: 24px;
+            margin-bottom: 8px;
+        }
+
+        .header-info {
+            display: flex;
+            gap: 20px;
+            font-size: 13px;
+            color: var(--text-secondary);
+        }
+
+        .tabs {
+            display: flex;
+            gap: 0;
+            margin-bottom: 20px;
+            background: var(--bg-primary);
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            overflow: hidden;
+        }
+
+        .tab-btn {
+            flex: 1;
+            padding: 12px;
+            background: var(--bg-primary);
+            border: none;
+            color: var(--text-secondary);
+            cursor: pointer;
+            font-size: 14px;
+            font-weight: 500;
+            transition: all 0.2s;
+        }
+
+        .tab-btn.active {
+            background: var(--primary);
+            color: white;
+        }
+
+        .tab-content {
+            display: none;
+        }
+
+        .tab-content.active {
+            display: block;
+        }
+
+        .card {
+            background: var(--bg-primary);
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            padding: 16px;
+            margin-bottom: 16px;
+            box-shadow: var(--shadow);
+        }
+
+        .form-group {
+            margin-bottom: 16px;
+        }
+
+        label {
+            display: block;
+            font-size: 14px;
+            font-weight: 500;
+            margin-bottom: 6px;
+            color: var(--text-primary);
+        }
+
+        input, select, textarea {
+            width: 100%;
+            padding: 10px 12px;
+            border: 1px solid var(--border-color);
+            border-radius: 6px;
+            font-size: 14px;
+            background: var(--bg-secondary);
+            color: var(--text-primary);
+            font-family: inherit;
+        }
+
+        input:focus, select:focus, textarea:focus {
+            outline: none;
+            border-color: var(--primary);
+            background: var(--bg-primary);
+        }
+
+        button {
+            padding: 10px 16px;
+            background: var(--primary);
+            color: white;
+            border: none;
+            border-radius: 6px;
+            font-size: 14px;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        button:hover {
+            background: var(--primary-dark);
+        }
+
+        button:active {
+            transform: scale(0.98);
+        }
+
+        .btn-secondary {
+            background: var(--bg-tertiary);
+            color: var(--text-primary);
+        }
+
+        .btn-secondary:hover {
+            background: var(--border-color);
+        }
+
+        .btn-danger {
+            background: var(--danger);
+        }
+
+        .btn-danger:hover {
+            background: #dc2626;
+        }
+
+        .btn-sm {
+            padding: 6px 12px;
+            font-size: 12px;
+        }
+
+        .stats-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 12px;
+            margin-bottom: 20px;
+        }
+
+        .stat-box {
+            background: var(--bg-secondary);
+            padding: 12px;
+            border-radius: 6px;
+            text-align: center;
+        }
+
+        .stat-label {
+            font-size: 12px;
+            color: var(--text-secondary);
+            margin-bottom: 4px;
+        }
+
+        .stat-value {
+            font-size: 20px;
+            font-weight: 600;
+        }
+
+        .stat-positive {
+            color: var(--success);
+        }
+
+        .stat-negative {
+            color: var(--danger);
+        }
+
+        .entry-item {
+            background: var(--bg-secondary);
+            padding: 12px;
+            border-radius: 6px;
+            margin-bottom: 12px;
+            border-left: 4px solid var(--primary);
+        }
+
+        .entry-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 8px;
+        }
+
+        .entry-date {
+            font-weight: 600;
+            font-size: 14px;
+        }
+
+        .entry-account {
+            font-size: 12px;
+            color: var(--text-secondary);
+        }
+
+        .entry-pnl {
+            font-size: 16px;
+            font-weight: 600;
+        }
+
+        .entry-balances {
+            font-size: 12px;
+            color: var(--text-secondary);
+            display: flex;
+            gap: 12px;
+            margin: 6px 0;
+        }
+
+        .entry-balance {
+            display: flex;
+            flex-direction: column;
+        }
+
+        .entry-balance span:first-child {
+            font-size: 11px;
+        }
+
+        .entry-images {
+            display: flex;
+            gap: 8px;
+            margin-top: 8px;
+            flex-wrap: wrap;
+        }
+
+        .image-thumb {
+            width: 60px;
+            height: 60px;
+            border-radius: 4px;
+            object-fit: cover;
+            cursor: pointer;
+            border: 1px solid var(--border-color);
+        }
+
+        .modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0,0,0,0.5);
+            z-index: 1000;
+            align-items: center;
+            justify-content: center;
+            padding: 16px;
+        }
+
+        .modal.active {
+            display: flex;
+        }
+
+        .modal-content {
+            background: var(--bg-primary);
+            border-radius: 8px;
+            padding: 20px;
+            max-width: 500px;
+            width: 100%;
+            max-height: 90vh;
+            overflow-y: auto;
+        }
+
+        .modal-header {
+            font-size: 18px;
+            font-weight: 600;
+            margin-bottom: 16px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .close-btn {
+            background: none;
+            border: none;
+            font-size: 24px;
+            cursor: pointer;
+            color: var(--text-secondary);
+            padding: 0;
+            width: 24px;
+            height: 24px;
+        }
+
+        .chart-container {
+            position: relative;
+            height: 300px;
+            margin-bottom: 20px;
+        }
+
+        .account-list {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+            margin-bottom: 16px;
+        }
+
+        .account-badge {
+            background: var(--primary-light);
+            color: white;
+            padding: 6px 12px;
+            border-radius: 20px;
+            font-size: 12px;
+            font-weight: 500;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        .account-badge .delete {
+            cursor: pointer;
+            font-weight: 700;
+            opacity: 0.7;
+        }
+
+        .account-badge .delete:hover {
+            opacity: 1;
+        }
+
+        .no-data {
+            text-align: center;
+            padding: 40px 20px;
+            color: var(--text-secondary);
+        }
+
+        .file-input-wrapper input[type=file] {
+            display: none;
+        }
+
+        .image-preview {
+            max-width: 100%;
+            max-height: 400px;
+            margin: 12px 0;
+            border-radius: 6px;
+        }
+
+        .image-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(80px, 1fr));
+            gap: 8px;
+        }
+
+        .image-item {
+            position: relative;
+        }
+
+        .image-item img {
+            width: 100%;
+            height: 80px;
+            object-fit: cover;
+            border-radius: 4px;
+        }
+
+        .image-remove {
+            position: absolute;
+            top: 2px;
+            right: 2px;
+            background: rgba(0,0,0,0.6);
+            color: white;
+            border: none;
+            width: 20px;
+            height: 20px;
+            border-radius: 50%;
+            cursor: pointer;
+            font-size: 12px;
+            padding: 0;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .alert {
+            padding: 12px;
+            margin-bottom: 16px;
+            border-radius: 6px;
+            font-size: 14px;
+        }
+
+        .alert-success {
+            background: rgba(16, 185, 129, 0.1);
+            color: var(--success);
+            border: 1px solid rgba(16, 185, 129, 0.3);
+        }
+
+        .alert-error {
+            background: rgba(239, 68, 68, 0.1);
+            color: var(--danger);
+            border: 1px solid rgba(239, 68, 68, 0.3);
+        }
+
+        @media (max-width: 600px) {
+            .container {
+                padding: 12px;
+            }
+            
+            header {
+                padding: 16px 12px;
+            }
+
+            .stats-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+</head>
+<body>
+    <header>
+        <h1>📈 Trading Tracker</h1>
+        <div class="header-info">
+            <span>Account: <strong id="activeAccount">-</strong></span>
+        </div>
+    </header>
+
+    <div class="container">
+        <div class="tabs">
+            <button class="tab-btn active" onclick="switchTab(event, 'dashboard')">Dashboard</button>
+            <button class="tab-btn" onclick="switchTab(event, 'entry')">Add Entry</button>
+            <button class="tab-btn" onclick="switchTab(event, 'accounts')">Accounts</button>
+            <button class="tab-btn" onclick="switchTab(event, 'export')">Export/Import</button>
+        </div>
+
+        <div id="dashboard" class="tab-content active">
+            <div class="stats-grid" id="statsGrid"></div>
+            <div class="card">
+                <h3 style="margin-bottom: 12px;">P&L Over Time</h3>
+                <div class="chart-container">
+                    <canvas id="pnlChart"></canvas>
+                </div>
+            </div>
+            <div class="card">
+                <h3 style="margin-bottom: 12px;">Recent Entries</h3>
+                <div id="recentEntries"></div>
+            </div>
+        </div>
+
+        <div id="entry" class="tab-content">
+            <div class="card">
+                <h3 style="margin-bottom: 16px;">Log Daily Trading</h3>
+                <div id="messageBox"></div>
+                <form id="entryForm" onsubmit="addEntry(event)">
+                    <div class="form-group">
+                        <label>Select Account</label>
+                        <select id="entryAccount" name="account" required></select>
+                    </div>
+
+                    <div class="form-group">
+                        <label>Date</label>
+                        <input type="date" id="entryDate" name="date" required>
+                    </div>
+
+                    <div class="form-group">
+                        <label>Starting Balance ($)</label>
+                        <input type="number" id="startBalance" name="startBalance" placeholder="1000.00" step="0.01" required>
+                    </div>
+
+                    <div class="form-group">
+                        <label>Ending Balance ($)</label>
+                        <input type="number" id="endBalance" name="endBalance" placeholder="1050.00" step="0.01" required>
+                    </div>
+
+                    <div class="form-group">
+                        <label>Notes (Optional)</label>
+                        <textarea id="entryNotes" name="notes" placeholder="Trading notes, strategy, etc." rows="4"></textarea>
+                    </div>
+
+                    <div class="form-group">
+                        <label>Attach Images (Optional)</label>
+                        <div class="file-input-wrapper">
+                            <button type="button" class="btn-secondary" onclick="document.getElementById('imageInput').click();" style="width: 100%;">
+                                📸 Choose Images
+                            </button>
+                            <input type="file" id="imageInput" multiple accept="image/*" onchange="handleImageSelect(event)">
+                        </div>
+                        <div class="image-grid" id="imageGrid" style="margin-top: 12px;"></div>
+                    </div>
+
+                    <button type="submit" style="width: 100%;">💾 Save Entry</button>
+                </form>
+            </div>
+        </div>
+
+        <div id="accounts" class="tab-content">
+            <div class="card">
+                <h3 style="margin-bottom: 16px;">Manage Accounts</h3>
+                
+                <div style="margin-bottom: 20px;">
+                    <h4 style="margin-bottom: 12px; font-size: 14px;">Active Accounts</h4>
+                    <div id="accountsList" class="account-list"></div>
+                </div>
+
+                <div style="border-top: 1px solid var(--border-color); padding-top: 16px;">
+                    <h4 style="margin-bottom: 12px; font-size: 14px;">Add New Account</h4>
+                    <div class="form-group">
+                        <label>Exchange Name</label>
+                        <input type="text" id="newAccount" placeholder="e.g., Binance Futures, Bybit, etc.">
+                    </div>
+                    <button type="button" onclick="addAccount()" style="width: 100%;">Add Account</button>
+                </div>
+            </div>
+        </div>
+
+        <div id="export" class="tab-content">
+            <div class="card">
+                <h3 style="margin-bottom: 16px;">Backup Your Data</h3>
+                
+                <div style="margin-bottom: 20px;">
+                    <h4 style="margin-bottom: 12px; font-size: 14px;">Export Data</h4>
+                    <p style="font-size: 12px; color: var(--text-secondary); margin-bottom: 12px;">Download all your trading data as a JSON file. Includes accounts, entries, and images.</p>
+                    <button type="button" onclick="exportData()" style="width: 100%;">📥 Export as JSON</button>
+                </div>
+
+                <div style="border-top: 1px solid var(--border-color); padding-top: 16px;">
+                    <h4 style="margin-bottom: 12px; font-size: 14px;">Import Data</h4>
+                    <p style="font-size: 12px; color: var(--text-secondary); margin-bottom: 12px;">Load a previously exported JSON file to restore your data.</p>
+                    <div class="file-input-wrapper">
+                        <button type="button" class="btn-secondary" style="width: 100%;" onclick="document.getElementById('importInput').click();">
+                            📤 Choose File to Import
+                        </button>
+                        <input type="file" id="importInput" accept=".json" onchange="importData(event)">
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div id="imageModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <span>Image</span>
+                <button type="button" class="close-btn" onclick="closeModal('imageModal')">×</button>
+            </div>
+            <img id="modalImage" class="image-preview" src="">
+        </div>
+    </div>
+
+    <script>
+        // Initialize app data structure
+        const app = {
+            accounts: [],
+            entries: [],
+            activeAccount: null,
+            selectedImages: []
+        };
+
+        let chart = null;
+
+        // Load data from localStorage
+        function loadData() {
+            try {
+                const saved = localStorage.getItem('tradingTrackerData');
+                if (saved) {
+                    const data = JSON.parse(saved);
+                    app.accounts = data.accounts || [];
+                    app.entries = data.entries || [];
+                    app.activeAccount = data.activeAccount || null;
+                }
+                
+                if (app.accounts.length === 0) {
+                    app.accounts = ['Binance Futures'];
+                }
+                
+                if (!app.activeAccount) {
+                    app.activeAccount = app.accounts[0];
+                }
+                
+                saveData();
+            } catch (e) {
+                console.error('Error loading data:', e);
+            }
+        }
+
+        // Save data to localStorage
+        function saveData() {
+            try {
+                localStorage.setItem('tradingTrackerData', JSON.stringify({
+                    accounts: app.accounts,
+                    entries: app.entries,
+                    activeAccount: app.activeAccount
+                }));
+            } catch (e) {
+                console.error('Error saving data:', e);
+                showMessage('Error saving data', 'error');
+            }
+        }
+
+        // Show message to user
+        function showMessage(text, type = 'success') {
+            const msgBox = document.getElementById('messageBox');
+            msgBox.innerHTML = `<div class="alert alert-${type}">${text}</div>`;
+            setTimeout(() => {
+                msgBox.innerHTML = '';
+            }, 3000);
+        }
+
+        // Update all UI elements
+        function updateUI() {
+            updateAccountSelectors();
+            updateAccountsList();
+            updateDashboard();
+            updateRecentEntries();
+        }
+
+        function updateAccountSelectors() {
+            const select = document.getElementById('entryAccount');
+            if (select) {
+                const currentValue = select.value;
+                select.innerHTML = '';
+                app.accounts.forEach(account => {
+                    const option = document.createElement('option');
+                    option.value = account;
+                    option.textContent = account;
+                    if (account === app.activeAccount) {
+                        option.selected = true;
+                    }
+                    select.appendChild(option);
+                });
+            }
+            document.getElementById('activeAccount').textContent = app.activeAccount || '-';
+        }
+
+        function updateAccountsList() {
+            const list = document.getElementById('accountsList');
+            if (!list) return;
+            list.innerHTML = '';
+            app.accounts.forEach(account => {
+                const badge = document.createElement('div');
+                badge.className = 'account-badge';
+                const deleteBtn = app.accounts.length > 1 ? `<span class="delete" onclick="deleteAccount('${account}')">×</span>` : '';
+                badge.innerHTML = `${account}${deleteBtn}`;
+                list.appendChild(badge);
+            });
+        }
+
+        function addAccount() {
+            const name = document.getElementById('newAccount').value.trim();
+            if (!name) {
+                showMessage('Please enter an account name', 'error');
+                return;
+            }
+            if (app.accounts.includes(name)) {
+                showMessage('Account already exists', 'error');
+                return;
+            }
+            
+            app.accounts.push(name);
+            app.activeAccount = name;
+            saveData();
+            updateUI();
+            document.getElementById('newAccount').value = '';
+            showMessage('Account added successfully!', 'success');
+        }
+
+        function deleteAccount(account) {
+            if (app.entries.some(e => e.account === account)) {
+                showMessage('Cannot delete account with existing entries', 'error');
+                return;
+            }
+            
+            app.accounts = app.accounts.filter(a => a !== account);
+            if (app.activeAccount === account) {
+                app.activeAccount = app.accounts[0];
+            }
+            saveData();
+            updateUI();
+            showMessage('Account deleted', 'success');
+        }
+
+        function switchTab(event, tabName) {
+            event.preventDefault();
+            document.querySelectorAll('.tab-content').forEach(tab => tab.classList.remove('active'));
+            document.querySelectorAll('.tab-btn').forEach(btn => btn.classList.remove('active'));
+            document.getElementById(tabName).classList.add('active');
+            event.target.classList.add('active');
+            
+            if (tabName === 'dashboard' && chart) {
+                setTimeout(() => {
+                    if (chart) chart.resize();
+                }, 100);
+            }
+        }
+
+        // Optimized Image Compression Logic
+        async function handleImageSelect(event) {
+            const files = Array.from(event.target.files);
+            const maxWidth = 800; 
+            const quality = 0.7;  
+
+            const promises = files.map(file => {
+                return new Promise((resolve) => {
+                    const reader = new FileReader();
+                    reader.onload = (e) => {
+                        const img = new Image();
+                        img.onload = () => {
+                            let width = img.width;
+                            let height = img.height;
+                            if (width > maxWidth) {
+                                height = Math.round((height * maxWidth) / width);
+                                width = maxWidth;
+                            }
+
+                            const canvas = document.createElement('canvas');
+                            canvas.width = width;
+                            canvas.height = height;
+                            const ctx = canvas.getContext('2d');
+                            ctx.drawImage(img, 0, 0, width, height);
+
+                            const compressedData = canvas.toDataURL('image/jpeg', quality);
+                            resolve({
+                                data: compressedData,
+                                name: file.name
+                            });
+                        };
+                        img.src = e.target.result;
+                    };
+                    reader.readAsDataURL(file);
+                });
+            });
+
+            const images = await Promise.all(promises);
+            app.selectedImages = images;
+            renderImageGrid();
+        }
+
+        function renderImageGrid() {
+            const grid = document.getElementById('imageGrid');
+            grid.innerHTML = '';
+            app.selectedImages.forEach((img, idx) => {
+                const div = document.createElement('div');
+                div.className = 'image-item';
+                div.innerHTML = `
+                    <img src="${img.data}" alt="Selected image">
+                    <button type="button" class="image-remove" onclick="removeImage(${idx})">×</button>
+                `;
+                grid.appendChild(div);
+            });
+        }
+
+        function removeImage(idx) {
+            app.selectedImages.splice(idx, 1);
+            renderImageGrid();
+        }
+
+        function addEntry(event) {
+            event.preventDefault();
+            
+            const account = document.getElementById('entryAccount').value;
+            const date = document.getElementById('entryDate').value;
+            const startBalanceInput = document.getElementById('startBalance').value;
+            const endBalanceInput = document.getElementById('endBalance').value;
+            const notes = document.getElementById('entryNotes').value;
+
+            if (!account || !date || !startBalanceInput || !endBalanceInput) {
+                showMessage('Please fill in all required fields', 'error');
+                return;
+            }
+
+            const startBalance = parseFloat(startBalanceInput);
+            const endBalance = parseFloat(endBalanceInput);
+
+            if (isNaN(startBalance) || isNaN(endBalance)) {
+                showMessage('Starting and ending balances must be valid numbers', 'error');
+                return;
+            }
+
+            const pnl = endBalance - startBalance;
+
+            const entry = {
+                id: Date.now(),
+                account: account,
+                date: date,
+                startBalance: parseFloat(startBalance.toFixed(2)),
+                endBalance: parseFloat(endBalance.toFixed(2)),
+                pnl: parseFloat(pnl.toFixed(2)),
+                notes: notes,
+                images: [...app.selectedImages]
+            };
+
+            app.entries.push(entry);
+            app.entries.sort((a, b) => new Date(b.date) - new Date(a.date));
+
+            saveData();
+            updateUI();
+
+            const form = document.getElementById('entryForm');
+            form.reset();
+            app.selectedImages = [];
+            document.getElementById('imageGrid').innerHTML = '';
+            const today = new Date().toISOString().split('T')[0];
+            document.getElementById('entryDate').value = today;
+
+            showMessage('✓ Entry saved successfully!', 'success');
+        }
+
+        function deleteEntry(id) {
+            if (confirm('Delete this entry?')) {
+                app.entries = app.entries.filter(e => e.id !== id);
+                saveData();
+                updateUI();
+                showMessage('Entry deleted', 'success');
+            }
+        }
+
+        function updateDashboard() {
+            const filtered = app.entries.filter(e => e.account === app.activeAccount);
+            
+            let totalPnl = 0;
+            let wins = 0;
+            let losses = 0;
+            let totalDays = 0;
+            
+            filtered.forEach(e => {
+                totalPnl += e.pnl;
+                if (e.pnl > 0) wins++;
+                else if (e.pnl < 0) losses++;
+                totalDays++;
+            });
+            
+            const winRate = totalDays > 0 ? ((wins / totalDays) * 100).toFixed(1) : 0;
+            
+            const statsHtml = `
+                <div class="stat-box">
+                    <div class="stat-label">Total P&L</div>
+                    <div class="stat-value ${totalPnl >= 0 ? 'stat-positive' : 'stat-negative'}">
+                        ${totalPnl >= 0 ? '+' : ''}$${totalPnl.toFixed(2)}
+                    </div>
+                </div>
+                <div class="stat-box">
+                    <div class="stat-label">Win Rate</div>
+                    <div class="stat-value">${winRate}%</div>
+                </div>
+                <div class="stat-box">
+                    <div class="stat-label">Winning Days</div>
+                    <div class="stat-value stat-positive">${wins}</div>
+                </div>
+                <div class="stat-box">
+                    <div class="stat-label">Losing Days</div>
+                    <div class="stat-value stat-negative">${losses}</div>
+                </div>
+            `;
+            
+            document.getElementById('statsGrid').innerHTML = statsHtml;
+            
+            if (filtered.length > 0) {
+                const chartData = [...filtered].reverse().map(e => ({
+                    date: new Date(e.date).toLocaleDateString('en-US', { month: 'short', day: 'numeric' }),
+                    pnl: e.pnl
+                }));
+                
+                const ctx = document.getElementById('pnlChart');
+                if (!ctx) return;
+                
+                const canvasCtx = ctx.getContext('2d');
+                
+                if (chart) {
+                    chart.destroy();
+                }
+                
+                chart = new Chart(canvasCtx, {
+                    type: 'line',
+                    data: {
+                        labels: chartData.map(d => d.date),
+                        datasets: [{
+                            label: 'Daily P&L',
+                            data: chartData.map(d => d.pnl),
+                            borderColor: 'var(--primary)',
+                            backgroundColor: 'rgba(30, 64, 175, 0.1)',
+                            borderWidth: 2,
+                            fill: true,
+                            tension: 0.4,
+                            pointRadius: 4,
+                            pointHoverRadius: 6,
+                            pointBackgroundColor: 'var(--primary)',
+                            pointBorderColor: 'white',
+                            pointBorderWidth: 2
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        plugins: {
+                            legend: {
+                                display: false
+                            }
+                        },
+                        scales: {
+                            y: {
+                                ticks: {
+                                    callback: function(value) {
+                                        return '$' + value.toFixed(0);
+                                    },
+                                    color: 'var(--text-secondary)'
+                                },
+                                grid: {
+                                    color: 'var(--border-color)'
+                                }
+                            },
+                            x: {
+                                ticks: {
+                                    color: 'var(--text-secondary)'
+                                },
+                                grid: {
+                                    color: 'var(--border-color)'
+                                }
+                            }
+                        }
+                    }
+                });
+            }
+        }
+
+        function updateRecentEntries() {
+            const filtered = app.entries.filter(e => e.account === app.activeAccount).slice(0, 5);
+            const container = document.getElementById('recentEntries');
+            
+            if (filtered.length === 0) {
+                container.innerHTML = '<div class="no-data">No entries yet. Start logging your trades!</div>';
+                return;
+            }
+            
+            container.innerHTML = filtered.map(e => `
+                <div class="entry-item">
+                    <div class="entry-header">
+                        <div>
+                            <div class="entry-date">${new Date(e.date).toLocaleDateString()}</div>
+                            <div class="entry-account">${e.account}</div>
+                        </div>
+                        <div>
+                            <div class="entry-pnl ${e.pnl >= 0 ? 'stat-positive' : 'stat-negative'}">
+                                ${e.pnl >= 0 ? '+' : ''}$${e.pnl.toFixed(2)}
+                            </div>
+                        </div>
+                    </div>
+                    <div class="entry-balances">
+                        <div class="entry-balance">
+                            <span>Start</span>
+                            <strong>$${e.startBalance.toFixed(2)}</strong>
+                        </div>
+                        <div class="entry-balance">
+                            <span>End</span>
+                            <strong>$${e.endBalance.toFixed(2)}</strong>
+                        </div>
+                    </div>
+                    ${e.notes ? `<div style="font-size: 12px; color: var(--text-secondary); margin: 6px 0;">${e.notes}</div>` : ''}
+                    ${e.images && e.images.length > 0 ? `
+                        <div class="entry-images">
+                            ${e.images.map((img, idx) => `
+                                <img src="${img.data}" class="image-thumb" onclick="showImage(${e.id}, ${idx})">
+                            `).join('')}
+                        </div>
+                    ` : ''}
+                    <button type="button" class="btn-sm btn-danger" style="margin-top: 8px;" onclick="deleteEntry(${e.id})">Delete</button>
+                </div>
+            `).join('');
+        }
+
+        function showImage(entryId, imgIdx) {
+            const entry = app.entries.find(e => e.id == entryId);
+            if (entry && entry.images[imgIdx]) {
+                document.getElementById('modalImage').src = entry.images[imgIdx].data;
+                document.getElementById('imageModal').classList.add('active');
+            }
+        }
+
+        function closeModal(modalId) {
+            document.getElementById(modalId).classList.remove('active');
+        }
+
+        function exportData() {
+            const dataStr = JSON.stringify(app, null, 2);
+            const dataBlob = new Blob([dataStr], { type: 'application/json' });
+            const url = URL.createObjectURL(dataBlob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `trading-tracker-${new Date().toISOString().split('T')[0]}.json`;
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            URL.revokeObjectURL(url);
+            showMessage('Data exported successfully!', 'success');
+        }
+
+        function importData(event) {
+            const file = event.target.files[0];
+            if (!file) return;
+            
+            const reader = new FileReader();
+            reader.onload = (e) => {
+                try {
+                    const imported = JSON.parse(e.target.result);
+                    
+                    if (confirm('This will overwrite all existing data. Continue?')) {
+                        app.accounts = imported.accounts || [];
+                        app.entries = imported.entries || [];
+                        app.activeAccount = imported.activeAccount || (app.accounts[0] || 'Binance Futures');
+                        
+                        saveData();
+                        updateUI();
+                        showMessage('Data imported successfully!', 'success');
+                    }
+                } catch (err) {
+                    console.error('Import error:', err);
+                    showMessage('Invalid file format', 'error');
+                }
+            };
+            reader.readAsText(file);
+        }
+
+        document.addEventListener('DOMContentLoaded', () => {
+            const today = new Date().toISOString().split('T')[0];
+            const dateInput = document.getElementById('entryDate');
+            if (dateInput) {
+                dateInput.value = today;
+            }
+            
+            loadData();
+            updateUI();
+        });
+    </script>
+</body>
+</html>

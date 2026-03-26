@@ -1,0 +1,15 @@
+{
+  "name": "TradeTrack",
+  "short_name": "TradeTrack",
+  "start_url": "index.html",
+  "display": "standalone",
+  "background_color": "#ffffff",
+  "theme_color": "#1e40af",
+  "icons": [
+    {
+      "src": "https://i.imgur.com/vH9jZ9B.png",
+      "sizes": "512x512",
+      "type": "image/png"
+    }
+  ]
+}
