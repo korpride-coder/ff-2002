@@ -13,7 +13,7 @@
 
     <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/3.9.1/chart.min.js"></script>
     <style>
-        /* Styles remain the same for consistency */
+        /* CSS remains identical to v13 for visual consistency */
         * { margin: 0; padding: 0; box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
         :root {
             --primary: #1e40af; --success: #10b981; --danger: #ef4444;
@@ -105,12 +105,17 @@
     <div id="add" class="tab-content">
         <div class="card">
             <form id="tradeForm">
-                <label>Account</label>
+                <label>Date</label>
+                <input type="date" id="logDate" required>
+                
+                <label style="margin-top:10px; display:block;">Account</label>
                 <select id="accSelect" onchange="autoPopulateStartBal()"></select>
+                
                 <div style="display: flex; gap: 10px; margin-top:10px;">
                     <div style="flex:1;"><label>Start ($)</label><input type="number" id="sBal" step="0.01" required></div>
                     <div style="flex:1;"><label>End ($)</label><input type="number" id="eBal" step="0.01" required></div>
                 </div>
+                
                 <label style="margin-top:10px; display:block;">Notes</label><textarea id="notes" rows="3"></textarea>
                 <label style="margin-top:10px; display:block;">Discord Link</label><input type="text" id="imgLinks">
                 <button type="submit" class="main-btn">Save Log</button>
@@ -148,7 +153,9 @@
     let currentFilterDays = 0;
 
     function save() {
-        localStorage.setItem('trade_track_v13', JSON.stringify(db));
+        // Sort entries by date (newest first) to keep calcs and chart accurate
+        db.entries.sort((a, b) => new Date(b.date) - new Date(a.date));
+        localStorage.setItem('trade_track_v14', JSON.stringify(db));
         render();
     }
 
@@ -158,9 +165,10 @@
         document.getElementById(id).classList.add('active');
         btn.classList.add('active');
         
-        // AUTO-POPULATE TRIGGER
         if(id === 'add') {
-            document.getElementById('accSelect').value = db.active; // Match header selection
+            // Set default date to today's date in YYYY-MM-DD format
+            document.getElementById('logDate').valueAsDate = new Date();
+            document.getElementById('accSelect').value = db.active;
             autoPopulateStartBal();
         }
         if(id === 'dash') setTimeout(renderChart, 50);
@@ -168,17 +176,11 @@
         if(id === 'set') renderAccountManager();
     }
 
-    // UPDATED POPULATION LOGIC
     function autoPopulateStartBal() {
         const selectedAcc = document.getElementById('accSelect').value;
         const filtered = db.entries.filter(e => e.acc === selectedAcc);
         const startInput = document.getElementById('sBal');
-        
-        if (filtered.length > 0) {
-            startInput.value = filtered[0].end; // Latest end balance
-        } else {
-            startInput.value = ""; // Clear if no history
-        }
+        if (filtered.length > 0) { startInput.value = filtered[0].end; } else { startInput.value = ""; }
     }
 
     function updateGoalSetting(val) { db.goal = parseFloat(val) || 0; save(); }
@@ -210,27 +212,26 @@
             document.getElementById('totalBalDisplay').innerText = `$${currentBal.toLocaleString(undefined,{minimumFractionDigits:2})}`;
             document.getElementById('winRateDash').innerText = `${Math.round((filtered.filter(e=>e.pnl>0).length/filtered.length)*100)}%`;
             document.getElementById('netReturnDisplay').innerText = `${(((currentBal-initialBal)/initialBal)*100).toFixed(1)}%`;
-        } else {
-            document.getElementById('totalBalDisplay').innerText = "$0.00";
-            document.getElementById('winRateDash').innerText = "0%";
-            document.getElementById('netReturnDisplay').innerText = "0%";
+            
+            // Re-calc Max Drawdown for stats card
+            let maxDD = 0, peak = 0, sumPnL = 0;
+            [...filtered].reverse().forEach(e => {
+                sumPnL += e.pnl;
+                let cur = filtered[filtered.length-1].start + sumPnL;
+                if(cur > peak) peak = cur;
+                let dd = peak > 0 ? ((peak - cur) / peak) * 100 : 0;
+                if(dd > maxDD) maxDD = dd;
+            });
+            document.getElementById('maxDDDisplay').innerText = `-${maxDD.toFixed(1)}%`;
         }
     }
 
-    function switchAccount(val) { db.active = val; save(); renderChart(); }
-    
-    function setFilter(days, el) { 
-        currentFilterDays = days; 
-        document.querySelectorAll('.filter-pill').forEach(p => p.classList.remove('active'));
-        el.classList.add('active'); 
-        renderChart(); 
-    }
-    
     document.getElementById('tradeForm').onsubmit = (e) => {
         e.preventDefault();
         db.entries.unshift({
-            id: Date.now(), acc: document.getElementById('accSelect').value,
-            date: new Date().toISOString(),
+            id: Date.now(), 
+            acc: document.getElementById('accSelect').value,
+            date: document.getElementById('logDate').value, // Use chosen date
             start: parseFloat(document.getElementById('sBal').value),
             end: parseFloat(document.getElementById('eBal').value),
             pnl: parseFloat(document.getElementById('eBal').value) - parseFloat(document.getElementById('sBal').value),
@@ -269,7 +270,7 @@
             <div class="entry-card">
                 <button class="delete-btn" onclick="deleteEntry(${e.id})">Del</button>
                 <div style="display:flex; justify-content:space-between; font-weight:800;">
-                    <span>${new Date(e.date).toLocaleDateString()}</span>
+                    <span>${new Date(e.date + 'T00:00:00').toLocaleDateString()}</span>
                     <span style="color:${e.pnl >= 0 ? 'var(--success)' : 'var(--danger)'}">${e.pnl >= 0 ? '+' : ''}$${e.pnl.toFixed(2)}</span>
                 </div>
                 <div style="font-size:12px; margin:8px 0; color:var(--text-secondary);">${e.notes}</div>
@@ -278,30 +279,33 @@
         `).join('');
     }
 
+    // Standard helper functions
+    function switchAccount(val) { db.active = val; save(); renderChart(); }
+    function setFilter(days, el) { 
+        currentFilterDays = days; 
+        document.querySelectorAll('.filter-pill').forEach(p => p.classList.remove('active'));
+        el.classList.add('active'); 
+        renderChart(); 
+    }
     function deleteEntry(id) { if(confirm("Remove log?")) { db.entries = db.entries.filter(e => e.id !== id); save(); renderHistory(); } }
-    
     function addAccount() {
         const name = document.getElementById('newAccName').value.trim();
         if(name && !db.accounts.includes(name)) { db.accounts.push(name); document.getElementById('newAccName').value = ''; save(); renderAccountManager(); }
     }
-    
     function renderAccountManager() {
         document.getElementById('accManagerList').innerHTML = db.accounts.map(a => `<div style="display:flex; justify-content:space-between; padding:8px 0; border-bottom:1px solid var(--border-color);"><span style="font-weight:700;">${a}</span><button onclick="deleteAccount('${a}')" style="color:var(--danger); background:none; border:none; font-size:11px;">Remove</button></div>`).join('');
     }
-    
     function deleteAccount(name) { if(db.accounts.length > 1 && confirm(`Delete ${name}?`)) { db.accounts = db.accounts.filter(a => a !== name); db.entries = db.entries.filter(e => e.acc !== name); save(); renderAccountManager(); } }
-    
     function exportData() {
         const blob = new Blob([JSON.stringify(db)], {type: 'application/json'});
         const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = `TradeLog_Backup.json`; a.click();
     }
-    
     function importData(e) {
         const reader = new FileReader(); reader.onload = (ev) => { db = JSON.parse(ev.target.result); save(); location.reload(); }; reader.readAsText(e.target.files[0]);
     }
 
     window.onload = () => {
-        const saved = localStorage.getItem('trade_track_v13');
+        const saved = localStorage.getItem('trade_track_v14');
         if(saved) db = JSON.parse(saved);
         render();
         renderChart();
