@@ -28,11 +28,15 @@
         body { font-family: -apple-system, system-ui, sans-serif; background: var(--bg-secondary); color: var(--text-primary); }
         .container { max-width: 500px; margin: 0 auto; padding: 15px; padding-bottom: 80px; }
         header { background: var(--bg-primary); padding: 12px 16px; border-bottom: 1px solid var(--border-color); display: flex; align-items: center; justify-content: space-between; position: sticky; top: 0; z-index: 1000; }
+        
+        /* Tabs Navigation */
         .tabs { display: flex; background: var(--bg-primary); border: 1px solid var(--border-color); border-radius: 12px; margin: 15px 0; overflow: hidden; }
         .tab-btn { flex: 1; padding: 10px 5px; border: none; background: none; color: var(--text-secondary); cursor: pointer; font-weight: 600; font-size: 13px; }
         .tab-btn.active { background: var(--primary); color: white; }
         .tab-content { display: none; }
         .tab-content.active { display: block; }
+        
+        /* Progress & Cards */
         .goal-container { background: var(--bg-primary); padding: 12px; border-radius: 12px; border: 1px solid var(--border-color); margin-bottom: 15px; }
         .goal-header { display: flex; justify-content: space-between; font-size: 11px; font-weight: 800; margin-bottom: 6px; }
         .progress-bg { background: var(--bg-secondary); height: 8px; border-radius: 10px; overflow: hidden; }
@@ -42,11 +46,15 @@
         .stat-card { background: var(--bg-primary); padding: 12px; border-radius: 12px; border: 1px solid var(--border-color); text-align: center; }
         .stat-label { font-size: 10px; font-weight: 700; color: var(--text-secondary); text-transform: uppercase; margin-bottom: 4px; }
         .stat-value { font-size: 16px; font-weight: 800; }
+
+        /* UI Elements */
         .filter-row { display: flex; gap: 8px; margin-bottom: 10px; justify-content: center; }
         .filter-pill { padding: 6px 12px; border-radius: 20px; border: 1px solid var(--border-color); font-size: 11px; font-weight: 700; cursor: pointer; background: var(--bg-primary); color: var(--text-secondary); }
         .filter-pill.active { background: var(--primary); color: white; border-color: var(--primary); }
         input, select, textarea { width: 100%; padding: 12px; border-radius: 10px; border: 1px solid var(--border-color); background: var(--bg-secondary); color: var(--text-primary); font-size: 16px; margin-top: 5px; }
         .main-btn { width: 100%; padding: 14px; border-radius: 12px; border: none; background: var(--primary); color: white; font-weight: 700; cursor: pointer; margin-top: 10px; }
+        
+        /* History Items */
         .entry-card { background: var(--bg-primary); border: 1px solid var(--border-color); padding: 16px; border-radius: 16px; margin-bottom: 12px; border-left: 6px solid var(--primary); position: relative; }
         .delete-btn { position: absolute; top: 10px; right: 10px; font-size: 10px; padding: 4px 8px; background: rgba(239, 68, 68, 0.1); border: none; border-radius: 4px; color: var(--danger); }
         .img-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 8px; margin-top: 10px; }
@@ -71,7 +79,7 @@
 
     <div id="dash" class="tab-content active">
         <div class="global-card">
-            <div style="font-size: 11px; font-weight: 700; text-transform: uppercase; opacity: 0.8; margin-bottom: 5px;">Total Portfolio</div>
+            <div style="font-size: 11px; font-weight: 700; text-transform: uppercase; opacity: 0.8; margin-bottom: 5px;">Total Net Worth</div>
             <div id="globalBalDisplay" style="font-size: 28px; font-weight: 900;">$0.00</div>
         </div>
 
@@ -91,7 +99,7 @@
         </div>
 
         <div class="filter-row">
-            <div class="filter-pill active" onclick="setFilter(0, this)">All</div>
+            <div class="filter-pill active" onclick="setFilter(0, this)">All Time</div>
             <div class="filter-pill" onclick="setFilter(7, this)">7D</div>
             <div class="filter-pill" onclick="setFilter(30, this)">1M</div>
         </div>
@@ -106,52 +114,57 @@
             <form id="tradeForm">
                 <label>Date</label>
                 <input type="date" id="logDate" required>
+                
                 <label style="margin-top:10px; display:block;">Account</label>
                 <select id="accSelect" onchange="autoPopulateStartBal()"></select>
+                
                 <div style="display: flex; gap: 10px; margin-top:10px;">
                     <div style="flex:1;"><label>Start ($)</label><input type="number" id="sBal" step="0.01" required></div>
                     <div style="flex:1;"><label>End ($)</label><input type="number" id="eBal" step="0.01" required></div>
                 </div>
+                
                 <label style="margin-top:10px; display:block;">Notes</label><textarea id="notes" rows="3"></textarea>
-                <label style="margin-top:10px; display:block;">Discord Link</label><input type="text" id="imgLinks">
-                <button type="submit" class="main-btn">Save Log</button>
+                <label style="margin-top:10px; display:block;">Discord Image Link</label><input type="text" id="imgLinks" placeholder="Comma separated URLs">
+                <button type="submit" class="main-btn">Save Entry</button>
             </form>
         </div>
     </div>
 
     <div id="set" class="tab-content">
         <div class="card">
-            <label>Set Net Worth Goal ($)</label>
-            <input type="number" id="goalInput" placeholder="e.g. 50000" onchange="updateGoalSetting(this.value)">
+            <label style="font-weight:800;">Set Financial Goal ($)</label>
+            <input type="number" id="goalInput" placeholder="e.g. 10000" onchange="updateGoalSetting(this.value)">
         </div>
         <div class="card">
-            <h3 style="margin-bottom:10px">Exchanges</h3>
+            <h3 style="margin: 15px 0 10px 0;">Accounts Manager</h3>
             <div id="accManagerList"></div>
             <div style="display: flex; gap: 8px; margin-top: 10px;">
-                <input type="text" id="newAccName" placeholder="Exchange Name" style="margin-top:0;">
-                <button onclick="addAccount()" class="filter-pill" style="height:42px;">Add</button>
+                <input type="text" id="newAccName" placeholder="Account Name" style="margin-top:0;">
+                <button onclick="addAccount()" class="filter-pill" style="height:46px;">Add</button>
             </div>
         </div>
-        <div class="card">
-            <button class="main-btn" onclick="exportData()" style="background:#eee; color:#333;">📥 Export .JSON</button>
-            <input type="file" id="importIn" onchange="importData(event)" style="margin-top:10px;">
+        <div class="card" style="margin-top:20px; padding-top:20px; border-top:1px solid var(--border-color);">
+            <h3 style="margin-bottom:10px;">Backup & Recovery</h3>
+            <button class="main-btn" onclick="exportData()" style="background:#eee; color:#333;">📥 Export to Local Storage</button>
+            <label style="margin-top:15px; display:block; font-size:12px; font-weight:800;">Import .json Backup</label>
+            <input type="file" id="importIn" accept=".json,application/json" onchange="importData(event)">
         </div>
     </div>
 </div>
 
 <script>
     if ('serviceWorker' in navigator) {
-        navigator.serviceWorker.register('sw.js').then(() => console.log("SW Registered"));
+        navigator.serviceWorker.register('sw.js').then(() => console.log("PWA Live"));
     }
 
-    let db = { accounts: ['MEXC Futures'], entries: [], active: 'MEXC Futures', goal: 10000 };
+    let db = { accounts: ['MEXC Futures'], entries: [], active: 'MEXC Futures', goal: 5000 };
     let myChart = null;
     let currentFilterDays = 0;
 
     function save() {
-        // CRITICAL FIX: Sort by Date (oldest to newest) to maintain mathematical chain
+        // Keeps list sorted by date globally
         db.entries.sort((a, b) => new Date(a.date) - new Date(b.date));
-        localStorage.setItem('trade_track_v15', JSON.stringify(db));
+        localStorage.setItem('trade_track_v16', JSON.stringify(db));
         render();
     }
 
@@ -175,15 +188,12 @@
         const selectedAcc = document.getElementById('accSelect').value;
         const filtered = db.entries.filter(e => e.acc === selectedAcc);
         const startInput = document.getElementById('sBal');
-        // Get the latest end balance for the specific account
-        if (filtered.length > 0) { 
-            startInput.value = filtered[filtered.length - 1].end; 
-        } else { 
-            startInput.value = ""; 
+        if (filtered.length > 0) {
+            startInput.value = filtered[filtered.length - 1].end;
+        } else {
+            startInput.value = "";
         }
     }
-
-    function updateGoalSetting(val) { db.goal = parseFloat(val) || 0; save(); }
 
     function render() {
         const accHtml = db.accounts.map(a => `<option value="${a}" ${a === db.active ? 'selected' : ''}>${a}</option>`).join('');
@@ -192,7 +202,6 @@
         document.getElementById('activeAccLabel').innerText = db.active;
         document.getElementById('goalInput').value = db.goal;
 
-        // GLOBAL CALCULATIONS (Last entry for each account)
         let globalTotal = 0;
         db.accounts.forEach(acc => {
             const accEntries = db.entries.filter(e => e.acc === acc);
@@ -206,32 +215,22 @@
         document.getElementById('goalCurrent').innerText = `$${globalTotal.toFixed(0)}`;
         document.getElementById('goalTarget').innerText = `$${db.goal.toLocaleString()}`;
 
-        // ACTIVE ACCOUNT CALCULATIONS
         const filtered = db.entries.filter(e => e.acc === db.active);
         if(filtered.length > 0) {
             const currentBal = filtered[filtered.length - 1].end;
-            const initialBal = filtered[0].start; // Oldest entry's start
-            
+            const initialBal = filtered[0].start;
             document.getElementById('totalBalDisplay').innerText = `$${currentBal.toLocaleString(undefined,{minimumFractionDigits:2})}`;
             document.getElementById('winRateDash').innerText = `${Math.round((filtered.filter(e=>e.pnl>0).length/filtered.length)*100)}%`;
-            
-            // Fixed Net Return Logic
             const netReturn = ((currentBal - initialBal) / initialBal) * 100;
             document.getElementById('netReturnDisplay').innerText = `${netReturn.toFixed(1)}%`;
             
-            // Max Drawdown Logic
             let maxDD = 0, peak = initialBal;
             filtered.forEach(e => {
                 if(e.end > peak) peak = e.end;
-                let dd = ((peak - e.end) / peak) * 100;
+                let dd = peak > 0 ? ((peak - e.end) / peak) * 100 : 0;
                 if(dd > maxDD) maxDD = dd;
             });
             document.getElementById('maxDDDisplay').innerText = `-${maxDD.toFixed(1)}%`;
-        } else {
-            document.getElementById('totalBalDisplay').innerText = "$0.00";
-            document.getElementById('winRateDash').innerText = "0%";
-            document.getElementById('netReturnDisplay').innerText = "0%";
-            document.getElementById('maxDDDisplay').innerText = "0%";
         }
     }
 
@@ -287,6 +286,7 @@
         `).join('');
     }
 
+    function updateGoalSetting(val) { db.goal = parseFloat(val) || 0; save(); }
     function switchAccount(val) { db.active = val; render(); renderChart(); }
     function setFilter(days, el) { 
         currentFilterDays = days; 
@@ -294,7 +294,7 @@
         el.classList.add('active'); 
         renderChart(); 
     }
-    function deleteEntry(id) { if(confirm("Remove log?")) { db.entries = db.entries.filter(e => e.id !== id); save(); renderHistory(); } }
+    function deleteEntry(id) { if(confirm("Remove this log?")) { db.entries = db.entries.filter(e => e.id !== id); save(); renderHistory(); } }
     function addAccount() {
         const name = document.getElementById('newAccName').value.trim();
         if(name && !db.accounts.includes(name)) { db.accounts.push(name); document.getElementById('newAccName').value = ''; save(); renderAccountManager(); }
@@ -302,17 +302,24 @@
     function renderAccountManager() {
         document.getElementById('accManagerList').innerHTML = db.accounts.map(a => `<div style="display:flex; justify-content:space-between; padding:8px 0; border-bottom:1px solid var(--border-color);"><span style="font-weight:700;">${a}</span><button onclick="deleteAccount('${a}')" style="color:var(--danger); background:none; border:none; font-size:11px;">Remove</button></div>`).join('');
     }
-    function deleteAccount(name) { if(db.accounts.length > 1 && confirm(`Delete ${name}?`)) { db.accounts = db.accounts.filter(a => a !== name); db.entries = db.entries.filter(e => e.acc !== name); save(); renderAccountManager(); } }
+    function deleteAccount(name) { if(db.accounts.length > 1 && confirm(`Delete ${name} and all its logs?`)) { db.accounts = db.accounts.filter(a => a !== name); db.entries = db.entries.filter(e => e.acc !== name); save(); renderAccountManager(); } }
+    
     function exportData() {
         const blob = new Blob([JSON.stringify(db)], {type: 'application/json'});
         const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = `TradeLog_Backup.json`; a.click();
     }
     function importData(e) {
-        const reader = new FileReader(); reader.onload = (ev) => { db = JSON.parse(ev.target.result); save(); location.reload(); }; reader.readAsText(e.target.files[0]);
+        const reader = new FileReader(); 
+        reader.onload = (ev) => { 
+            try {
+                db = JSON.parse(ev.target.result); save(); alert("Restore Complete!"); location.reload();
+            } catch(e) { alert("Invalid Backup File"); }
+        }; 
+        reader.readAsText(e.target.files[0]);
     }
 
     window.onload = () => {
-        const saved = localStorage.getItem('trade_track_v15');
+        const saved = localStorage.getItem('trade_track_v16');
         if(saved) db = JSON.parse(saved);
         render();
         renderChart();
