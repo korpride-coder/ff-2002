@@ -13,7 +13,6 @@
 
     <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/3.9.1/chart.min.js"></script>
     <style>
-        /* CSS remains identical to v13 for visual consistency */
         * { margin: 0; padding: 0; box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
         :root {
             --primary: #1e40af; --success: #10b981; --danger: #ef4444;
@@ -107,15 +106,12 @@
             <form id="tradeForm">
                 <label>Date</label>
                 <input type="date" id="logDate" required>
-                
                 <label style="margin-top:10px; display:block;">Account</label>
                 <select id="accSelect" onchange="autoPopulateStartBal()"></select>
-                
                 <div style="display: flex; gap: 10px; margin-top:10px;">
                     <div style="flex:1;"><label>Start ($)</label><input type="number" id="sBal" step="0.01" required></div>
                     <div style="flex:1;"><label>End ($)</label><input type="number" id="eBal" step="0.01" required></div>
                 </div>
-                
                 <label style="margin-top:10px; display:block;">Notes</label><textarea id="notes" rows="3"></textarea>
                 <label style="margin-top:10px; display:block;">Discord Link</label><input type="text" id="imgLinks">
                 <button type="submit" class="main-btn">Save Log</button>
@@ -153,9 +149,9 @@
     let currentFilterDays = 0;
 
     function save() {
-        // Sort entries by date (newest first) to keep calcs and chart accurate
-        db.entries.sort((a, b) => new Date(b.date) - new Date(a.date));
-        localStorage.setItem('trade_track_v14', JSON.stringify(db));
+        // CRITICAL FIX: Sort by Date (oldest to newest) to maintain mathematical chain
+        db.entries.sort((a, b) => new Date(a.date) - new Date(b.date));
+        localStorage.setItem('trade_track_v15', JSON.stringify(db));
         render();
     }
 
@@ -166,7 +162,6 @@
         btn.classList.add('active');
         
         if(id === 'add') {
-            // Set default date to today's date in YYYY-MM-DD format
             document.getElementById('logDate').valueAsDate = new Date();
             document.getElementById('accSelect').value = db.active;
             autoPopulateStartBal();
@@ -180,7 +175,12 @@
         const selectedAcc = document.getElementById('accSelect').value;
         const filtered = db.entries.filter(e => e.acc === selectedAcc);
         const startInput = document.getElementById('sBal');
-        if (filtered.length > 0) { startInput.value = filtered[0].end; } else { startInput.value = ""; }
+        // Get the latest end balance for the specific account
+        if (filtered.length > 0) { 
+            startInput.value = filtered[filtered.length - 1].end; 
+        } else { 
+            startInput.value = ""; 
+        }
     }
 
     function updateGoalSetting(val) { db.goal = parseFloat(val) || 0; save(); }
@@ -192,10 +192,11 @@
         document.getElementById('activeAccLabel').innerText = db.active;
         document.getElementById('goalInput').value = db.goal;
 
+        // GLOBAL CALCULATIONS (Last entry for each account)
         let globalTotal = 0;
         db.accounts.forEach(acc => {
-            const last = db.entries.find(e => e.acc === acc);
-            if(last) globalTotal += last.end;
+            const accEntries = db.entries.filter(e => e.acc === acc);
+            if(accEntries.length > 0) globalTotal += accEntries[accEntries.length - 1].end;
         });
 
         document.getElementById('globalBalDisplay').innerText = `$${globalTotal.toLocaleString(undefined,{minimumFractionDigits:2})}`;
@@ -205,33 +206,41 @@
         document.getElementById('goalCurrent').innerText = `$${globalTotal.toFixed(0)}`;
         document.getElementById('goalTarget').innerText = `$${db.goal.toLocaleString()}`;
 
+        // ACTIVE ACCOUNT CALCULATIONS
         const filtered = db.entries.filter(e => e.acc === db.active);
         if(filtered.length > 0) {
-            const currentBal = filtered[0].end;
-            const initialBal = filtered[filtered.length - 1].start;
+            const currentBal = filtered[filtered.length - 1].end;
+            const initialBal = filtered[0].start; // Oldest entry's start
+            
             document.getElementById('totalBalDisplay').innerText = `$${currentBal.toLocaleString(undefined,{minimumFractionDigits:2})}`;
             document.getElementById('winRateDash').innerText = `${Math.round((filtered.filter(e=>e.pnl>0).length/filtered.length)*100)}%`;
-            document.getElementById('netReturnDisplay').innerText = `${(((currentBal-initialBal)/initialBal)*100).toFixed(1)}%`;
             
-            // Re-calc Max Drawdown for stats card
-            let maxDD = 0, peak = 0, sumPnL = 0;
-            [...filtered].reverse().forEach(e => {
-                sumPnL += e.pnl;
-                let cur = filtered[filtered.length-1].start + sumPnL;
-                if(cur > peak) peak = cur;
-                let dd = peak > 0 ? ((peak - cur) / peak) * 100 : 0;
+            // Fixed Net Return Logic
+            const netReturn = ((currentBal - initialBal) / initialBal) * 100;
+            document.getElementById('netReturnDisplay').innerText = `${netReturn.toFixed(1)}%`;
+            
+            // Max Drawdown Logic
+            let maxDD = 0, peak = initialBal;
+            filtered.forEach(e => {
+                if(e.end > peak) peak = e.end;
+                let dd = ((peak - e.end) / peak) * 100;
                 if(dd > maxDD) maxDD = dd;
             });
             document.getElementById('maxDDDisplay').innerText = `-${maxDD.toFixed(1)}%`;
+        } else {
+            document.getElementById('totalBalDisplay').innerText = "$0.00";
+            document.getElementById('winRateDash').innerText = "0%";
+            document.getElementById('netReturnDisplay').innerText = "0%";
+            document.getElementById('maxDDDisplay').innerText = "0%";
         }
     }
 
     document.getElementById('tradeForm').onsubmit = (e) => {
         e.preventDefault();
-        db.entries.unshift({
+        db.entries.push({
             id: Date.now(), 
             acc: document.getElementById('accSelect').value,
-            date: document.getElementById('logDate').value, // Use chosen date
+            date: document.getElementById('logDate').value,
             start: parseFloat(document.getElementById('sBal').value),
             end: parseFloat(document.getElementById('eBal').value),
             pnl: parseFloat(document.getElementById('eBal').value) - parseFloat(document.getElementById('sBal').value),
@@ -251,13 +260,12 @@
             cutoff.setDate(cutoff.getDate() - currentFilterDays);
             data = data.filter(e => new Date(e.date) >= cutoff);
         }
-        data = data.reverse();
         if(myChart) myChart.destroy();
         if(data.length === 0) return;
         myChart = new Chart(ctx, {
             type: 'line',
             data: {
-                labels: data.map(e => new Date(e.date).toLocaleDateString(undefined,{month:'short',day:'numeric'})),
+                labels: data.map(e => new Date(e.date + 'T00:00:00').toLocaleDateString(undefined,{month:'short',day:'numeric'})),
                 datasets: [{ data: data.map(e => e.end), borderColor: '#60a5fa', tension: 0.3, fill: true, backgroundColor: 'rgba(96, 165, 250, 0.1)', pointRadius: 2 }]
             },
             options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } } }
@@ -265,7 +273,7 @@
     }
 
     function renderHistory() {
-        const filtered = db.entries.filter(e => e.acc === db.active);
+        const filtered = [...db.entries].filter(e => e.acc === db.active).reverse();
         document.getElementById('historyList').innerHTML = filtered.map(e => `
             <div class="entry-card">
                 <button class="delete-btn" onclick="deleteEntry(${e.id})">Del</button>
@@ -279,8 +287,7 @@
         `).join('');
     }
 
-    // Standard helper functions
-    function switchAccount(val) { db.active = val; save(); renderChart(); }
+    function switchAccount(val) { db.active = val; render(); renderChart(); }
     function setFilter(days, el) { 
         currentFilterDays = days; 
         document.querySelectorAll('.filter-pill').forEach(p => p.classList.remove('active'));
@@ -305,7 +312,7 @@
     }
 
     window.onload = () => {
-        const saved = localStorage.getItem('trade_track_v14');
+        const saved = localStorage.getItem('trade_track_v15');
         if(saved) db = JSON.parse(saved);
         render();
         renderChart();
