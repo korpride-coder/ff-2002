@@ -5,10 +5,9 @@
   "display": "standalone",
   "background_color": "#111827",
   "theme_color": "#1e40af",
-  "description": "Professional Crypto Trading Journal",
   "icons": [
     {
-      "src": "https://i.imgur.com/vH9jZ9B.png",
+      "src": "FF-Logo.png",
       "sizes": "512x512",
       "type": "image/png",
       "purpose": "any maskable"

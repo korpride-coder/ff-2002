@@ -8,10 +8,12 @@
     <meta name="mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="apple-mobile-web-app-title" content="TradeTrack">
+    
     <link rel="manifest" href="manifest.json">
     
-    <link rel="icon" type="image/png" href="https://i.imgur.com/vH9jZ9B.png">
-    <link rel="apple-touch-icon" href="https://i.imgur.com/vH9jZ9B.png">
+    <link rel="icon" type="image/png" href="FF-Logo.png">
+    <link rel="apple-touch-icon" href="FF-Logo.png">
 
     <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/3.9.1/chart.min.js"></script>
     <style>
@@ -35,12 +37,7 @@
             display: flex; align-items: center; justify-content: space-between; position: sticky; top: 0; z-index: 1000;
         }
         .logo-group { display: flex; align-items: center; gap: 10px; }
-        
-        /* LOGO FIX: Ensuring it has dimensions and visibility */
-        .app-logo { 
-            width: 32px; height: 32px; border-radius: 6px; object-fit: cover; 
-            display: block; background: #eee; 
-        }
+        .app-logo { width: 32px; height: 32px; border-radius: 6px; object-fit: cover; display: block; }
 
         .tabs { display: flex; background: var(--bg-primary); border: 1px solid var(--border-color); border-radius: 12px; margin: 15px 0; overflow: hidden; }
         .tab-btn { flex: 1; padding: 12px; border: none; background: none; color: var(--text-secondary); cursor: pointer; font-weight: 600; font-size: 14px; }
@@ -68,11 +65,7 @@
 
 <header>
     <div class="logo-group">
-        <img src="https://i.imgur.com/vH9jZ9B.png" 
-             alt="T" 
-             class="app-logo" 
-             id="mainLogo"
-             onerror="this.src='https://via.placeholder.com/32/1e40af/ffffff?text=T'">
+        <img src="FF-Logo.png" alt="Logo" class="app-logo" onerror="this.src='https://via.placeholder.com/32?text=FF'">
         <h1 style="font-size: 18px; font-weight: 800;">TradeTrack</h1>
     </div>
     <div id="currentAcc" style="font-size: 12px; font-weight: 700; color: var(--primary);">Loading...</div>
@@ -106,8 +99,7 @@
                     <textarea id="notes" rows="3"></textarea>
                 </div>
                 <div class="form-group">
-                    <label>Trade Screenshots</label>
-                    <div class="upload-btn" onclick="document.getElementById('fileIn').click()">📸 Click to Upload Charts</div>
+                    <div class="upload-btn" onclick="document.getElementById('fileIn').click()">📸 Add Charts</div>
                     <input type="file" id="fileIn" hidden multiple accept="image/*" onchange="processImages(event)">
                     <div id="previews" class="img-grid"></div>
                 </div>
@@ -130,7 +122,7 @@
     let myChart = null;
 
     function save() {
-        localStorage.setItem('trade_track_final', JSON.stringify(db));
+        localStorage.setItem('trade_track_v3', JSON.stringify(db));
         render();
     }
 
@@ -142,11 +134,9 @@
         if(id === 'dash') setTimeout(renderChart, 50);
     }
 
-    // FIXED IMAGE PROCESSING
     async function processImages(e) {
         const files = Array.from(e.target.files);
         const previewDiv = document.getElementById('previews');
-        
         for (let f of files) {
             const reader = new FileReader();
             reader.readAsDataURL(f);
@@ -163,8 +153,6 @@
                     ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
                     const compressed = canvas.toDataURL('image/jpeg', 0.6);
                     tempImgs.push(compressed);
-                    
-                    // Update UI immediately
                     const newImg = document.createElement('img');
                     newImg.src = compressed;
                     previewDiv.appendChild(newImg);
@@ -194,7 +182,6 @@
     function render() {
         document.getElementById('currentAcc').innerText = db.active;
         document.getElementById('accSelect').innerHTML = db.accounts.map(a => `<option>${a}</option>`).join('');
-        
         const filtered = db.entries;
         document.getElementById('history').innerHTML = filtered.map(e => `
             <div class="entry-card">
@@ -232,7 +219,7 @@
     }
 
     window.onload = () => {
-        const saved = localStorage.getItem('trade_track_final');
+        const saved = localStorage.getItem('trade_track_v3');
         if(saved) db = JSON.parse(saved);
         render();
     };
