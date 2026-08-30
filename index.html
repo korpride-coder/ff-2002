@@ -1,400 +1,412 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-<title>TradeTrack Pro</title>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>TradeTrack Pro</title>
+    
+    <meta name="mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <link rel="manifest" href="manifest.json">
+    <link rel="icon" type="image/png" href="FF-Logo.png">
 
-<meta name="mobile-web-app-capable" content="yes">
-<meta name="apple-mobile-web-app-capable" content="yes">
-<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-<link rel="manifest" href="manifest.json">
-<link rel="icon" type="image/png" href="FF-Logo.png">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/3.9.1/chart.min.js"></script>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+        :root {
+            --primary: #1e40af; --success: #10b981; --danger: #ef4444;
+            --bg-primary: #ffffff; --bg-secondary: #f9fafb;
+            --text-primary: #111827; --text-secondary: #6b7280; --border-color: #e5e7eb;
+        }
+        @media (prefers-color-scheme: dark) {
+            :root {
+                --primary: #60a5fa; --bg-primary: #111827; --bg-secondary: #1f2937;
+                --text-primary: #f3f4f6; --text-secondary: #9ca3af; --border-color: #374151;
+            }
+        }
+        body { font-family: -apple-system, system-ui, sans-serif; background: var(--bg-secondary); color: var(--text-primary); }
+        .container { max-width: 500px; margin: 0 auto; padding: 15px; padding-bottom: 80px; }
+        header { background: var(--bg-primary); padding: 12px 16px; border-bottom: 1px solid var(--border-color); display: flex; align-items: center; justify-content: space-between; position: sticky; top: 0; z-index: 1000; }
+        
+        /* Tabs Navigation */
+        .tabs { display: flex; background: var(--bg-primary); border: 1px solid var(--border-color); border-radius: 12px; margin: 15px 0; overflow: hidden; }
+        .tab-btn { flex: 1; padding: 10px 5px; border: none; background: none; color: var(--text-secondary); cursor: pointer; font-weight: 600; font-size: 13px; }
+        .tab-btn.active { background: var(--primary); color: white; }
+        .tab-content { display: none; }
+        .tab-content.active { display: block; }
+        
+        /* Progress & Cards */
+        .goal-container { background: var(--bg-primary); padding: 12px; border-radius: 12px; border: 1px solid var(--border-color); margin-bottom: 15px; }
+        .goal-header { display: flex; justify-content: space-between; font-size: 11px; font-weight: 800; margin-bottom: 6px; }
+        .progress-bg { background: var(--bg-secondary); height: 8px; border-radius: 10px; overflow: hidden; }
+        .progress-fill { background: var(--success); height: 100%; width: 0%; transition: width 0.5s ease; }
+        .global-card { background: linear-gradient(135deg, var(--primary), #1e3a8a); color: white; padding: 20px; border-radius: 16px; text-align: center; margin-bottom: 15px; }
+        .stats-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 10px; margin-bottom: 15px; }
+        .stat-card { background: var(--bg-primary); padding: 12px; border-radius: 12px; border: 1px solid var(--border-color); text-align: center; }
+        .stat-label { font-size: 10px; font-weight: 700; color: var(--text-secondary); text-transform: uppercase; margin-bottom: 4px; }
+        .stat-value { font-size: 16px; font-weight: 800; }
 
-<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/3.9.1/chart.min.js"></script>
-<style>
-* { margin: 0; padding: 0; box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
-:root {
---primary: #1e40af; --success: #10b981; --danger: #ef4444;
---bg-primary: #ffffff; --bg-secondary: #f9fafb;
---text-primary: #111827; --text-secondary: #6b7280; --border-color: #e5e7eb;
-}
-@media (prefers-color-scheme: dark) {
-:root {
---primary: #60a5fa; --bg-primary: #111827; --bg-secondary: #1f2937;
---text-primary: #f3f4f6; --text-secondary: #9ca3af; --border-color: #374151;
-}
-}
-body { font-family: -apple-system, system-ui, sans-serif; background: var(--bg-secondary); color: var(--text-primary); }
-.container { max-width: 500px; margin: 0 auto; padding: 15px; padding-bottom: 80px; }
-header { background: var(--bg-primary); padding: 12px 16px; border-bottom: 1px solid var(--border-color); display: flex; align-items: center; justify-content: space-between; position: sticky; top: 0; z-index: 1000; }
+        /* UI Elements */
+        .filter-row { display: flex; gap: 8px; margin-bottom: 10px; justify-content: center; }
+        .filter-pill { padding: 6px 12px; border-radius: 20px; border: 1px solid var(--border-color); font-size: 11px; font-weight: 700; cursor: pointer; background: var(--bg-primary); color: var(--text-secondary); }
+        .filter-pill.active { background: var(--primary); color: white; border-color: var(--primary); }
+        input, select, textarea { width: 100%; padding: 12px; border-radius: 10px; border: 1px solid var(--border-color); background: var(--bg-secondary); color: var(--text-primary); font-size: 16px; margin-top: 5px; }
+        .main-btn { width: 100%; padding: 14px; border-radius: 12px; border: none; background: var(--primary); color: white; font-weight: 700; cursor: pointer; margin-top: 10px; }
+        
+        /* History Items */
+        .entry-card { background: var(--bg-primary); border: 1px solid var(--border-color); padding: 16px; border-radius: 16px; margin-bottom: 12px; border-left: 6px solid var(--primary); position: relative; }
+        .delete-btn { position: absolute; top: 10px; right: 10px; font-size: 10px; padding: 4px 8px; background: rgba(239, 68, 68, 0.1); border: none; border-radius: 4px; color: var(--danger); }
+        .img-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 8px; margin-top: 10px; }
+        .img-grid img { width: 100%; aspect-ratio: 16/9; object-fit: cover; border-radius: 8px; }
+        .chart-container { height: 240px; width: 100%; }
 
-/* Tabs Navigation */
-.tabs { display: flex; background: var(--bg-primary); border: 1px solid var(--border-color); border-radius: 12px; margin: 15px 0; overflow: hidden; }
-.tab-btn { flex: 1; padding: 10px 5px; border: none; background: none; color: var(--text-secondary); cursor: pointer; font-weight: 600; font-size: 13px; }
-.tab-btn.active { background: var(--primary); color: white; }
-.tab-content { display: none; }
-.tab-content.active { display: block; }
-
-/* Progress & Cards */
-.goal-container { background: var(--bg-primary); padding: 12px; border-radius: 12px; border: 1px solid var(--border-color); margin-bottom: 15px; }
-.goal-header { display: flex; justify-content: space-between; font-size: 11px; font-weight: 800; margin-bottom: 6px; }
-.progress-bg { background: var(--bg-secondary); height: 8px; border-radius: 10px; overflow: hidden; }
-.progress-fill { background: var(--success); height: 100%; width: 0%; transition: width 0.5s ease; }
-.global-card { background: linear-gradient(135deg, var(--primary), #1e3a8a); color: white; padding: 20px; border-radius: 16px; text-align: center; margin-bottom: 15px; }
-.stats-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 10px; margin-bottom: 15px; }
-.stat-card { background: var(--bg-primary); padding: 12px; border-radius: 12px; border: 1px solid var(--border-color); text-align: center; }
-.stat-label { font-size: 10px; font-weight: 700; color: var(--text-secondary); text-transform: uppercase; margin-bottom: 4px; }
-.stat-value { font-size: 16px; font-weight: 800; }
-
-/* UI Elements */
-.filter-row { display: flex; gap: 8px; margin-bottom: 10px; justify-content: center; }
-.filter-pill { padding: 6px 12px; border-radius: 20px; border: 1px solid var(--border-color); font-size: 11px; font-weight: 700; cursor: pointer; background: var(--bg-primary); color: var(--text-secondary); }
-.filter-pill.active { background: var(--primary); color: white; border-color: var(--primary); }
-input, select, textarea { width: 100%; padding: 12px; border-radius: 10px; border: 1px solid var(--border-color); background: var(--bg-secondary); color: var(--text-primary); font-size: 16px; margin-top: 5px; }
-.main-btn { width: 100%; padding: 14px; border-radius: 12px; border: none; background: var(--primary); color: white; font-weight: 700; cursor: pointer; margin-top: 10px; }
-
-/* History Items */
-.entry-card { background: var(--bg-primary); border: 1px solid var(--border-color); padding: 16px; border-radius: 16px; margin-bottom: 12px; border-left: 6px solid var(--primary); position: relative; }
-.delete-btn { position: absolute; top: 10px; right: 10px; font-size: 10px; padding: 4px 8px; background: rgba(239, 68, 68, 0.1); border: none; border-radius: 4px; color: var(--danger); }
-.img-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 8px; margin-top: 10px; }
-.img-grid img { width: 100%; aspect-ratio: 16/9; object-fit: cover; border-radius: 8px; }
-.chart-container { height: 240px; width: 100%; }
-
-/* Account Checkbox List */
-.acc-selector-container {
-margin-top: 12px;
-padding-top: 10px;
-border-top: 1px solid rgba(255, 255, 255, 0.2);
-display: flex;
-flex-wrap: wrap;
-gap: 10px;
-justify-content: center;
-}
-.acc-checkbox-item {
-font-size: 12px;
-font-weight: 600;
-display: flex;
-align-items: center;
-gap: 4px;
-cursor: pointer;
-background: rgba(255, 255, 255, 0.15);
-padding: 4px 8px;
-border-radius: 6px;
-}
-.acc-checkbox-item input {
-width: auto;
-margin: 0;
-cursor: pointer;
-}
-</style>
+        /* Account Checkbox List */
+        .acc-selector-container {
+            margin-top: 12px;
+            padding-top: 10px;
+            border-top: 1px solid rgba(255, 255, 255, 0.2);
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+            justify-content: center;
+        }
+        .acc-checkbox-item {
+            font-size: 12px;
+            font-weight: 600;
+            display: flex;
+            align-items: center;
+            gap: 4px;
+            cursor: pointer;
+            background: rgba(255, 255, 255, 0.15);
+            padding: 4px 8px;
+            border-radius: 6px;
+        }
+        .acc-checkbox-item input {
+            width: auto;
+            margin: 0;
+            cursor: pointer;
+        }
+    </style>
 </head>
 <body>
 
 <header>
-<h1 style="font-size: 18px; font-weight: 800;">TradeTrack</h1>
-<select id="headerAccSelect" onchange="switchAccount(this.value)" style="width: auto; margin: 0; padding: 5px; font-size: 11px; height: 30px;"></select>
+    <h1 style="font-size: 18px; font-weight: 800;">TradeTrack</h1>
+    <select id="headerAccSelect" onchange="switchAccount(this.value)" style="width: auto; margin: 0; padding: 5px; font-size: 11px; height: 30px;"></select>
 </header>
 
 <div class="container">
-<div class="tabs">
-<button class="tab-btn active" onclick="showTab('dash', this)">Equity</button>
-<button class="tab-btn" onclick="showTab('hist', this)">History</button>
-<button class="tab-btn" onclick="showTab('add', this)">+ Log</button>
-<button class="tab-btn" onclick="showTab('set', this)">Data</button>
-</div>
+    <div class="tabs">
+        <button class="tab-btn active" onclick="showTab('dash', this)">Equity</button>
+        <button class="tab-btn" onclick="showTab('hist', this)">History</button>
+        <button class="tab-btn" onclick="showTab('add', this)">+ Log</button>
+        <button class="tab-btn" onclick="showTab('set', this)">Data</button>
+    </div>
 
-<div id="dash" class="tab-content active">
-<div class="global-card">
-<div style="font-size: 11px; font-weight: 700; text-transform: uppercase; opacity: 0.8; margin-bottom: 5px;">Total Net Worth</div>
-<div id="globalBalDisplay" style="font-size: 28px; font-weight: 900;">$`0.00</div>
+    <div id="dash" class="tab-content active">
+        <div class="global-card">
+            <div style="font-size: 11px; font-weight: 700; text-transform: uppercase; opacity: 0.8; margin-bottom: 5px;">Total Net Worth</div>
+            <div id="globalBalDisplay" style="font-size: 28px; font-weight: 900;">$0.00</div>
+            
+            <!-- Checkbox selector for accounts in Grand Total calculation -->
+            <div id="accChecklist" class="acc-selector-container"></div>
+        </div>
 
-<!-- Checkbox selector for accounts in Grand Total calculation -->
-<div id="accChecklist" class="acc-selector-container"></div>
-</div>
+        <div class="goal-container">
+            <div class="goal-header"><span>GOAL PROGRESS</span><span id="goalPercent">0%</span></div>
+            <div class="progress-bg"><div id="progressBar" class="progress-fill"></div></div>
+            <div style="display:flex; justify-content:space-between; font-size:10px; margin-top:5px; font-weight:700;">
+                <span id="goalCurrent">$0</span><span id="goalTarget">$0</span>
+            </div>
+        </div>
 
-<div class="goal-container">
-<div class="goal-header"><span>GOAL PROGRESS</span><span id="goalPercent">0%</span></div>
-<div class="progress-bg"><div id="progressBar" class="progress-fill"></div></div>
-<div style="display:flex; justify-content:space-between; font-size:10px; margin-top:5px; font-weight:700;">
-<span id="goalCurrent">$0&lt;/span&gt;&lt;span id="goalTarget"&gt;$0</span>
-</div>
-</div>
+        <div class="stats-grid">
+            <div class="stat-card"><div id="activeAccLabel" class="stat-label">--</div><div id="totalBalDisplay" class="stat-value">$0.00</div></div>
+            <div class="stat-card"><div class="stat-label">Win Rate</div><div id="winRateDash" class="stat-value">0%</div></div>
+            <div class="stat-card"><div class="stat-label">Net Return</div><div id="netReturnDisplay" class="stat-value">0%</div></div>
+            <div class="stat-card"><div class="stat-label">Max DD</div><div id="maxDDDisplay" class="stat-value" style="color:var(--danger);">0%</div></div>
+        </div>
 
-<div class="stats-grid">
-<div class="stat-card"><div id="activeAccLabel" class="stat-label">--</div><div id="totalBalDisplay" class="stat-value">`$0.00</div></div>
-<div class="stat-card"><div class="stat-label">Win Rate</div><div id="winRateDash" class="stat-value">0%</div></div>
-<div class="stat-card"><div class="stat-label">Net Return</div><div id="netReturnDisplay" class="stat-value">0%</div></div>
-<div class="stat-card"><div class="stat-label">Max DD</div><div id="maxDDDisplay" class="stat-value" style="color:var(--danger);">0%</div></div>
-</div>
+        <div class="filter-row">
+            <div class="filter-pill active" onclick="setFilter(0, this)">All Time</div>
+            <div class="filter-pill" onclick="setFilter(7, this)">7D</div>
+            <div class="filter-pill" onclick="setFilter(30, this)">1M</div>
+        </div>
 
-<div class="filter-row">
-<div class="filter-pill active" onclick="setFilter(0, this)">All Time</div>
-<div class="filter-pill" onclick="setFilter(7, this)">7D</div>
-<div class="filter-pill" onclick="setFilter(30, this)">1M</div>
-</div>
+        <div class="card"><div class="chart-container"><canvas id="mainChart"></canvas></div></div>
+    </div>
 
-<div class="card"><div class="chart-container"><canvas id="mainChart"></canvas></div></div>
-</div>
+    <div id="hist" class="tab-content"><div id="historyList"></div></div>
 
-<div id="hist" class="tab-content"><div id="historyList"></div></div>
+    <div id="add" class="tab-content">
+        <div class="card">
+            <form id="tradeForm">
+                <label>Date</label>
+                <input type="date" id="logDate" required>
+                
+                <label style="margin-top:10px; display:block;">Account</label>
+                <select id="accSelect" onchange="autoPopulateStartBal()"></select>
+                
+                <div style="display: flex; gap: 10px; margin-top:10px;">
+                    <div style="flex:1;"><label>Start ($)</label><input type="number" id="sBal" step="0.01" required></div>
+                    <div style="flex:1;"><label>End ($)</label><input type="number" id="eBal" step="0.01" required></div>
+                </div>
+                
+                <label style="margin-top:10px; display:block;">Notes</label><textarea id="notes" rows="3"></textarea>
+                <label style="margin-top:10px; display:block;">Discord Image Link</label><input type="text" id="imgLinks" placeholder="Comma separated URLs">
+                <button type="submit" class="main-btn">Save Entry</button>
+            </form>
+        </div>
+    </div>
 
-<div id="add" class="tab-content">
-<div class="card">
-<form id="tradeForm">
-<label>Date</label>
-<input type="date" id="logDate" required>
-
-<label style="margin-top:10px; display:block;">Account</label>
-<select id="accSelect" onchange="autoPopulateStartBal()"></select>
-
-<div style="display: flex; gap: 10px; margin-top:10px;">
-<div style="flex:1;"><label>Start ()</label><input type="number" id="eBal" step="0.01" required></div>
-</div>
-
-<label style="margin-top:10px; display:block;">Notes</label><textarea id="notes" rows="3"></textarea>
-<label style="margin-top:10px; display:block;">Discord Image Link</label><input type="text" id="imgLinks" placeholder="Comma separated URLs">
-<button type="submit" class="main-btn">Save Entry</button>
-</form>
-</div>
-</div>
-
-<div id="set" class="tab-content">
-<div class="card">
-<label style="font-weight:800;">Set Financial Goal ($`)</label>
-<input type="number" id="goalInput" placeholder="e.g. 10000" onchange="updateGoalSetting(this.value)">
-</div>
-<div class="card">
-<h3 style="margin: 15px 0 10px 0;">Accounts Manager</h3>
-<div id="accManagerList"></div>
-<div style="display: flex; gap: 8px; margin-top: 10px;">
-<input type="text" id="newAccName" placeholder="Account Name" style="margin-top:0;">
-<button onclick="addAccount()" class="filter-pill" style="height:46px;">Add</button>
-</div>
-</div>
-<div class="card" style="margin-top:20px; padding-top:20px; border-top:1px solid var(--border-color);">
-<h3 style="margin-bottom:10px;">Backup & Recovery</h3>
-<button class="main-btn" onclick="exportData()" style="background:#eee; color:#333;">📥 Export to Local Storage</button>
-<label style="margin-top:15px; display:block; font-size:12px; font-weight:800;">Import .json Backup</label>
-<input type="file" id="importIn" accept=".json,application/json" onchange="importData(event)">
-</div>
-</div>
+    <div id="set" class="tab-content">
+        <div class="card">
+            <label style="font-weight:800;">Set Financial Goal ($)</label>
+            <input type="number" id="goalInput" placeholder="e.g. 10000" onchange="updateGoalSetting(this.value)">
+        </div>
+        <div class="card">
+            <h3 style="margin: 15px 0 10px 0;">Accounts Manager</h3>
+            <div id="accManagerList"></div>
+            <div style="display: flex; gap: 8px; margin-top: 10px;">
+                <input type="text" id="newAccName" placeholder="Account Name" style="margin-top:0;">
+                <button onclick="addAccount()" class="filter-pill" style="height:46px;">Add</button>
+            </div>
+        </div>
+        <div class="card" style="margin-top:20px; padding-top:20px; border-top:1px solid var(--border-color);">
+            <h3 style="margin-bottom:10px;">Backup & Recovery</h3>
+            <button class="main-btn" onclick="exportData()" style="background:#eee; color:#333;">📥 Export to Local Storage</button>
+            <label style="margin-top:15px; display:block; font-size:12px; font-weight:800;">Import .json Backup</label>
+            <input type="file" id="importIn" accept=".json,application/json" onchange="importData(event)">
+        </div>
+    </div>
 </div>
 
 <script>
-if ('serviceWorker' in navigator) {
-navigator.serviceWorker.register('sw.js').then(() => console.log("PWA Live"));
-}
+    if ('serviceWorker' in navigator) {
+        navigator.serviceWorker.register('sw.js').then(() => console.log("PWA Live"));
+    }
 
-let db = {
-accounts: ['MEXC Futures'],
-selectedAccounts: ['MEXC Futures'], // Tracks which accounts contribute to the grand total
-entries: [],
-active: 'MEXC Futures',
-goal: 5000
-};
-let myChart = null;
-let currentFilterDays = 0;
+    let db = { 
+        accounts: ['MEXC Futures'], 
+        selectedAccounts: ['MEXC Futures'], // Tracks which accounts contribute to the grand total
+        entries: [], 
+        active: 'MEXC Futures', 
+        goal: 5000 
+    };
+    let myChart = null;
+    let currentFilterDays = 0;
 
-function save() {
-// Keeps list sorted by date globally
-db.entries.sort((a, b) => new Date(a.date) - new Date(b.date));
-localStorage.setItem('trade_track_v16', JSON.stringify(db));
-render();
-}
+    function save() {
+        // Keeps list sorted by date globally
+        db.entries.sort((a, b) => new Date(a.date) - new Date(b.date));
+        localStorage.setItem('trade_track_v16', JSON.stringify(db));
+        render();
+    }
 
-function showTab(id, btn) {
-document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
-document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
-document.getElementById(id).classList.add('active');
-btn.classList.add('active');
+    function showTab(id, btn) {
+        document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
+        document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+        document.getElementById(id).classList.add('active');
+        btn.classList.add('active');
+        
+        if(id === 'add') {
+            document.getElementById('logDate').valueAsDate = new Date();
+            document.getElementById('accSelect').value = db.active;
+            autoPopulateStartBal();
+        }
+        if(id === 'dash') setTimeout(renderChart, 50);
+        if(id === 'hist') renderHistory();
+        if(id === 'set') renderAccountManager();
+    }
 
-if(id === 'add') {
-document.getElementById('logDate').valueAsDate = new Date();
-document.getElementById('accSelect').value = db.active;
-autoPopulateStartBal();
-}
-if(id === 'dash') setTimeout(renderChart, 50);
-if(id === 'hist') renderHistory();
-if(id === 'set') renderAccountManager();
-}
+    function autoPopulateStartBal() {
+        const selectedAcc = document.getElementById('accSelect').value;
+        const filtered = db.entries.filter(e => e.acc === selectedAcc);
+        const startInput = document.getElementById('sBal');
+        if (filtered.length > 0) {
+            startInput.value = filtered[filtered.length - 1].end;
+        } else {
+            startInput.value = "";
+        }
+    }
 
-function autoPopulateStartBal() {
-const selectedAcc = document.getElementById('accSelect').value;
-const filtered = db.entries.filter(e => e.acc === selectedAcc);
-const startInput = document.getElementById('sBal');
-if (filtered.length > 0) {
-startInput.value = filtered[filtered.length - 1].end;
-} else {
-startInput.value = "";
-}
-}
+    function toggleAccountInTotal(accName, isChecked) {
+        if (!db.selectedAccounts) db.selectedAccounts = [...db.accounts];
+        
+        if (isChecked) {
+            if (!db.selectedAccounts.includes(accName)) {
+                db.selectedAccounts.push(accName);
+            }
+        } else {
+            db.selectedAccounts = db.selectedAccounts.filter(a => a !== accName);
+        }
+        save();
+    }
 
-function toggleAccountInTotal(accName, isChecked) {
-if (!db.selectedAccounts) db.selectedAccounts = [...db.accounts];
+    function render() {
+        // Ensure db.selectedAccounts is initialized if loading old saved state
+        if (!db.selectedAccounts) db.selectedAccounts = [...db.accounts];
 
-if (isChecked) {
-if (!db.selectedAccounts.includes(accName)) {
-db.selectedAccounts.push(accName);
-}
-} else {
-db.selectedAccounts = db.selectedAccounts.filter(a => a !== accName);
-}
-save();
-}
+        const accHtml = db.accounts.map(a => `<option value="${a}" ${a === db.active ? 'selected' : ''}>${a}</option>`).join('');
+        document.getElementById('headerAccSelect').innerHTML = accHtml;
+        document.getElementById('accSelect').innerHTML = accHtml;
+        document.getElementById('activeAccLabel').innerText = db.active;
+        document.getElementById('goalInput').value = db.goal;
 
-function render() {
-// Ensure db.selectedAccounts is initialized if loading old saved state
-if (!db.selectedAccounts) db.selectedAccounts = [...db.accounts];
+        // Render account checkboxes for Grand Total calculation
+        document.getElementById('accChecklist').innerHTML = db.accounts.map(acc => {
+            const isChecked = db.selectedAccounts.includes(acc) ? 'checked' : '';
+            return `
+                <label class="acc-checkbox-item">
+                    <input type="checkbox" ${isChecked} onchange="toggleAccountInTotal('${acc}', this.checked)">
+                    ${acc}
+                </label>
+            `;
+        }).join('');
 
-const accHtml = db.accounts.map(a => <option value="${a}" {a}</option>`).join('');
-document.getElementById('headerAccSelect').innerHTML = accHtml;
-document.getElementById('accSelect').innerHTML = accHtml;
-document.getElementById('activeAccLabel').innerText = db.active;
-document.getElementById('goalInput').value = db.goal;
+        // Calculate Grand Total for SELECTED accounts only
+        let globalTotal = 0;
+        db.selectedAccounts.forEach(acc => {
+            const accEntries = db.entries.filter(e => e.acc === acc);
+            if(accEntries.length > 0) globalTotal += accEntries[accEntries.length - 1].end;
+        });
 
-// Render account checkboxes for Grand Total calculation
-document.getElementById('accChecklist').innerHTML = db.accounts.map(acc => {
-const isChecked = db.selectedAccounts.includes(acc) ? 'checked' : '';
-return &lt;label class="acc-checkbox-item"&gt; &lt;input type="checkbox" ${isChecked} onchange="toggleAccountInTotal('${acc}', this.checked)"&gt; ${acc}
-</label>
-`;
-}).join('');
+        document.getElementById('globalBalDisplay').innerText = `$${globalTotal.toLocaleString(undefined,{minimumFractionDigits:2})}`;
+        const goalPercent = Math.min(100, Math.max(0, (globalTotal / db.goal) * 100));
+        document.getElementById('progressBar').style.width = goalPercent + '%';
+        document.getElementById('goalPercent').innerText = Math.round(goalPercent) + '%';
+        document.getElementById('goalCurrent').innerText = `$${globalTotal.toFixed(0)}`;
+        document.getElementById('goalTarget').innerText = `$${db.goal.toLocaleString()}`;
 
-// Calculate Grand Total for SELECTED accounts only
-let globalTotal = 0;
-db.selectedAccounts.forEach(acc => {
-const accEntries = db.entries.filter(e => e.acc === acc);
-if(accEntries.length > 0) globalTotal += accEntries[accEntries.length - 1].end;
-});
+        const filtered = db.entries.filter(e => e.acc === db.active);
+        if(filtered.length > 0) {
+            const currentBal = filtered[filtered.length - 1].end;
+            const initialBal = filtered[0].start;
+            document.getElementById('totalBalDisplay').innerText = `$${currentBal.toLocaleString(undefined,{minimumFractionDigits:2})}`;
+            document.getElementById('winRateDash').innerText = `${Math.round((filtered.filter(e=>e.pnl>0).length/filtered.length)*100)}%`;
+            const netReturn = ((currentBal - initialBal) / initialBal) * 100;
+            document.getElementById('netReturnDisplay').innerText = `${netReturn.toFixed(1)}%`;
+            
+            let maxDD = 0, peak = initialBal;
+            filtered.forEach(e => {
+                if(e.end > peak) peak = e.end;
+                let dd = peak > 0 ? ((peak - e.end) / peak) * 100 : 0;
+                if(dd > maxDD) maxDD = dd;
+            });
+            document.getElementById('maxDDDisplay').innerText = `-${maxDD.toFixed(1)}%`;
+        }
+    }
 
-document.getElementById('globalBalDisplay').innerText = ${globalTotal.toLocaleString(undefined,{minimumFractionDigits:2})}`; const goalPercent = Math.min(100, Math.max(0, (globalTotal / db.goal) * 100)); document.getElementById('progressBar').style.width = goalPercent + '%'; document.getElementById('goalPercent').innerText = Math.round(goalPercent) + '%'; document.getElementById('goalCurrent').innerText = `$`{globalTotal.toFixed(0)}`; document.getElementById('goalTarget').innerText =${db.goal.toLocaleString()}`;
+    document.getElementById('tradeForm').onsubmit = (e) => {
+        e.preventDefault();
+        db.entries.push({
+            id: Date.now(), 
+            acc: document.getElementById('accSelect').value,
+            date: document.getElementById('logDate').value,
+            start: parseFloat(document.getElementById('sBal').value),
+            end: parseFloat(document.getElementById('eBal').value),
+            pnl: parseFloat(document.getElementById('eBal').value) - parseFloat(document.getElementById('sBal').value),
+            notes: document.getElementById('notes').value,
+            imgs: document.getElementById('imgLinks').value.split(',').map(l=>l.trim()).filter(l=>l.length>5)
+        });
+        document.getElementById('tradeForm').reset();
+        save();
+        showTab('dash', document.querySelector('.tab-btn'));
+    };
 
-const filtered = db.entries.filter(e => e.acc === db.active);
-if(filtered.length > 0) {
-const currentBal = filtered[filtered.length - 1].end;
-const initialBal = filtered[0].start;
-document.getElementById('totalBalDisplay').innerText = ${currentBal.toLocaleString(undefined,{minimumFractionDigits:2})}; document.getElementById('winRateDash').innerText = ``${Math.round((filtered.filter(e=&gt;e.pnl&gt;0).length/filtered.length)*100)}%;
-const netReturn = ((currentBal - initialBal) / initialBal) * 100;
-document.getElementById('netReturnDisplay').innerText = ${netReturn.toFixed(1)}%`;
+    function renderChart() {
+        const ctx = document.getElementById('mainChart').getContext('2d');
+        let data = [...db.entries].filter(e => e.acc === db.active);
+        if (currentFilterDays > 0) {
+            const cutoff = new Date();
+            cutoff.setDate(cutoff.getDate() - currentFilterDays);
+            data = data.filter(e => new Date(e.date) >= cutoff);
+        }
+        if(myChart) myChart.destroy();
+        if(data.length === 0) return;
+        myChart = new Chart(ctx, {
+            type: 'line',
+            data: {
+                labels: data.map(e => new Date(e.date + 'T00:00:00').toLocaleDateString(undefined,{month:'short',day:'numeric'})),
+                datasets: [{ data: data.map(e => e.end), borderColor: '#60a5fa', tension: 0.3, fill: true, backgroundColor: 'rgba(96, 165, 250, 0.1)', pointRadius: 2 }]
+            },
+            options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } } }
+        });
+    }
 
-let maxDD = 0, peak = initialBal;
-filtered.forEach(e => {
-if(e.end > peak) peak = e.end;
-let dd = peak > 0 ? ((peak - e.end) / peak) * 100 : 0;
-if(dd > maxDD) maxDD = dd;
-});
-document.getElementById('maxDDDisplay').innerText = -${maxDD.toFixed(1)}%`;
-}
-}
+    function renderHistory() {
+        const filtered = [...db.entries].filter(e => e.acc === db.active).reverse();
+        document.getElementById('historyList').innerHTML = filtered.map(e => `
+            <div class="entry-card">
+                <button class="delete-btn" onclick="deleteEntry(${e.id})">Del</button>
+                <div style="display:flex; justify-content:space-between; font-weight:800;">
+                    <span>${new Date(e.date + 'T00:00:00').toLocaleDateString()}</span>
+                    <span style="color:${e.pnl >= 0 ? 'var(--success)' : 'var(--danger)'}">${e.pnl >= 0 ? '+' : ''}$${e.pnl.toFixed(2)}</span>
+                </div>
+                <div style="font-size:12px; margin:8px 0; color:var(--text-secondary);">${e.notes}</div>
+                <div class="img-grid">${e.imgs.map(l => `<img src="${l}" onclick="window.open('${l}')">`).join('')}</div>
+            </div>
+        `).join('');
+    }
 
-document.getElementById('tradeForm').onsubmit = (e) => {
-e.preventDefault();
-db.entries.push({
-id: Date.now(),
-acc: document.getElementById('accSelect').value,
-date: document.getElementById('logDate').value,
-start: parseFloat(document.getElementById('sBal').value),
-end: parseFloat(document.getElementById('eBal').value),
-pnl: parseFloat(document.getElementById('eBal').value) - parseFloat(document.getElementById('sBal').value),
-notes: document.getElementById('notes').value,
-imgs: document.getElementById('imgLinks').value.split(',').map(l=>l.trim()).filter(l=>l.length>5)
-});
-document.getElementById('tradeForm').reset();
-save();
-showTab('dash', document.querySelector('.tab-btn'));
-};
+    function updateGoalSetting(val) { db.goal = parseFloat(val) || 0; save(); }
+    function switchAccount(val) { db.active = val; render(); renderChart(); }
+    function setFilter(days, el) { 
+        currentFilterDays = days; 
+        document.querySelectorAll('.filter-pill').forEach(p => p.classList.remove('active'));
+        el.classList.add('active'); 
+        renderChart(); 
+    }
+    function deleteEntry(id) { if(confirm("Remove this log?")) { db.entries = db.entries.filter(e => e.id !== id); save(); renderHistory(); } }
+    
+    function addAccount() {
+        const name = document.getElementById('newAccName').value.trim();
+        if(name && !db.accounts.includes(name)) { 
+            db.accounts.push(name); 
+            if (!db.selectedAccounts) db.selectedAccounts = [];
+            db.selectedAccounts.push(name); // Automatically select newly added account
+            document.getElementById('newAccName').value = ''; 
+            save(); 
+            renderAccountManager(); 
+        }
+    }
+    
+    function renderAccountManager() {
+        document.getElementById('accManagerList').innerHTML = db.accounts.map(a => `<div style="display:flex; justify-content:space-between; padding:8px 0; border-bottom:1px solid var(--border-color);"><span style="font-weight:700;">${a}</span><button onclick="deleteAccount('${a}')" style="color:var(--danger); background:none; border:none; font-size:11px;">Remove</button></div>`).join('');
+    }
+    
+    function deleteAccount(name) { 
+        if(db.accounts.length > 1 && confirm(`Delete ${name} and all its logs?`)) { 
+            db.accounts = db.accounts.filter(a => a !== name); 
+            if (db.selectedAccounts) db.selectedAccounts = db.selectedAccounts.filter(a => a !== name);
+            db.entries = db.entries.filter(e => e.acc !== name); 
+            save(); 
+            renderAccountManager(); 
+        } 
+    }
+    
+    function exportData() {
+        const blob = new Blob([JSON.stringify(db)], {type: 'application/json'});
+        const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = `TradeLog_Backup.json`; a.click();
+    }
+    function importData(e) {
+        const reader = new FileReader(); 
+        reader.onload = (ev) => { 
+            try {
+                db = JSON.parse(ev.target.result); save(); alert("Restore Complete!"); location.reload();
+            } catch(e) { alert("Invalid Backup File"); }
+        }; 
+        reader.readAsText(e.target.files[0]);
+    }
 
-function renderChart() {
-const ctx = document.getElementById('mainChart').getContext('2d');
-let data = [...db.entries].filter(e => e.acc === db.active);
-if (currentFilterDays > 0) {
-const cutoff = new Date();
-cutoff.setDate(cutoff.getDate() - currentFilterDays);
-data = data.filter(e => new Date(e.date) >= cutoff);
-}
-if(myChart) myChart.destroy();
-if(data.length === 0) return;
-myChart = new Chart(ctx, {
-type: 'line',
-data: {
-labels: data.map(e => new Date(e.date + 'T00:00:00').toLocaleDateString(undefined,{month:'short',day:'numeric'})),
-datasets: [{ data: data.map(e => e.end), borderColor: '#60a5fa', tension: 0.3, fill: true, backgroundColor: 'rgba(96, 165, 250, 0.1)', pointRadius: 2 }]
-},
-options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } } }
-});
-}
-
-function renderHistory() {
-const filtered = [...db.entries].filter(e => e.acc === db.active).reverse();
-document.getElementById('historyList').innerHTML = filtered.map(e => &lt;div class="entry-card"&gt; &lt;button class="delete-btn" onclick="deleteEntry(${e.id})">Del</button>
-<div style="display:flex; justify-content:space-between; font-weight:800;">
-<span>${new Date(e.date + 'T00:00:00').toLocaleDateString()}&lt;/span&gt; &lt;span style="color:${e.pnl >= 0 ? 'var(--success)' : 'var(--danger)'}">${e.pnl &gt;= 0 ? '+' : ''}${e.pnl.toFixed(2)}</span>
-</div>
-<div style="font-size:12px; margin:8px 0; color:var(--text-secondary);">${e.notes}&lt;/div&gt; &lt;div class="img-grid"&gt;${e.imgs.map(l => <img src="${l}" onclick="window.open('${l}')">).join('')}</div>
-</div>
-`).join('');
-}
-
-function updateGoalSetting(val) { db.goal = parseFloat(val) || 0; save(); }
-function switchAccount(val) { db.active = val; render(); renderChart(); }
-function setFilter(days, el) {
-currentFilterDays = days;
-document.querySelectorAll('.filter-pill').forEach(p => p.classList.remove('active'));
-el.classList.add('active');
-renderChart();
-}
-function deleteEntry(id) { if(confirm("Remove this log?")) { db.entries = db.entries.filter(e => e.id !== id); save(); renderHistory(); } }
-
-function addAccount() {
-const name = document.getElementById('newAccName').value.trim();
-if(name && !db.accounts.includes(name)) {
-db.accounts.push(name);
-if (!db.selectedAccounts) db.selectedAccounts = [];
-db.selectedAccounts.push(name); // Automatically select newly added account
-document.getElementById('newAccName').value = '';
-save();
-renderAccountManager();
-}
-}
-
-function renderAccountManager() {
-document.getElementById('accManagerList').innerHTML = db.accounts.map(a => <div style="display:flex; justify-content:space-between; padding:8px 0; border-bottom:1px solid var(--border-color);"&gt;&lt;span style="font-weight:700;"&gt;${a}</span><button onclick="deleteAccount('${a}')" style="color:var(--danger); background:none; border:none; font-size:11px;"&gt;Remove&lt;/button&gt;&lt;/div>).join('');
-}
-
-function deleteAccount(name) {
-if(db.accounts.length > 1 && confirm(Delete${name} and all its logs?`)) {
-db.accounts = db.accounts.filter(a => a !== name);
-if (db.selectedAccounts) db.selectedAccounts = db.selectedAccounts.filter(a => a !== name);
-db.entries = db.entries.filter(e => e.acc !== name);
-save();
-renderAccountManager();
-}
-}
-
-function exportData() {
-const blob = new Blob([JSON.stringify(db)], {type: 'application/json'});
-const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = TradeLog_Backup.json; a.click();
-}
-function importData(e) {
-const reader = new FileReader();
-reader.onload = (ev) => {
-try {
-db = JSON.parse(ev.target.result); save(); alert("Restore Complete!"); location.reload();
-} catch(e) { alert("Invalid Backup File"); }
-};
-reader.readAsText(e.target.files[0]);
-}
-
-window.onload = () => {
-const saved = localStorage.getItem('trade_track_v16');
-if(saved) db = JSON.parse(saved);
-if(!db.selectedAccounts) db.selectedAccounts = [...db.accounts];
-render();
-renderChart();
-};
+    window.onload = () => {
+        const saved = localStorage.getItem('trade_track_v16');
+        if(saved) db = JSON.parse(saved);
+        if(!db.selectedAccounts) db.selectedAccounts = [...db.accounts];
+        render();
+        renderChart();
+    };
 </script>
 </body>
 </html>
-Notes_260829_020631.txt
-19 KB
