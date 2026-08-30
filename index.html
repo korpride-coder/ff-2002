@@ -122,7 +122,7 @@
         </div>
 
         <div class="stats-grid">
-            <div class="stat-card"><div id="activeAccLabel" class="stat-label">--</div><div id="totalBalDisplay" class="stat-value">$0.00</div></div>
+            <div class="stat-card"><div class="stat-label">Profit Factor</div><div id="profitFactorDisplay" class="stat-value">0.00</div></div>
             <div class="stat-card"><div class="stat-label">Win Rate</div><div id="winRateDash" class="stat-value">0%</div></div>
             <div class="stat-card"><div class="stat-label">Net Return</div><div id="netReturnDisplay" class="stat-value">0%</div></div>
             <div class="stat-card"><div class="stat-label">Max DD</div><div id="maxDDDisplay" class="stat-value" style="color:var(--danger);">0%</div></div>
@@ -189,7 +189,7 @@
 
     let db = { 
         accounts: ['MEXC Futures'], 
-        selectedAccounts: ['MEXC Futures'], // Tracks which accounts contribute to the grand total
+        selectedAccounts: ['MEXC Futures'], 
         entries: [], 
         active: 'MEXC Futures', 
         goal: 5000 
@@ -198,7 +198,6 @@
     let currentFilterDays = 0;
 
     function save() {
-        // Keeps list sorted by date globally
         db.entries.sort((a, b) => new Date(a.date) - new Date(b.date));
         localStorage.setItem('trade_track_v16', JSON.stringify(db));
         render();
@@ -245,13 +244,22 @@
     }
 
     function render() {
-        // Ensure db.selectedAccounts is initialized if loading old saved state
-        if (!db.selectedAccounts) db.selectedAccounts = [...db.accounts];
+        if (!db.accounts || db.accounts.length === 0) {
+            db.accounts = ['MEXC Futures'];
+        }
+        if (!db.accounts.includes(db.active)) {
+            db.active = db.accounts[0];
+        }
+
+        if (!db.selectedAccounts) {
+            db.selectedAccounts = [...db.accounts];
+        } else {
+            db.selectedAccounts = db.selectedAccounts.filter(a => db.accounts.includes(a));
+        }
 
         const accHtml = db.accounts.map(a => `<option value="${a}" ${a === db.active ? 'selected' : ''}>${a}</option>`).join('');
         document.getElementById('headerAccSelect').innerHTML = accHtml;
         document.getElementById('accSelect').innerHTML = accHtml;
-        document.getElementById('activeAccLabel').innerText = db.active;
         document.getElementById('goalInput').value = db.goal;
 
         // Render account checkboxes for Grand Total calculation
@@ -283,9 +291,25 @@
         if(filtered.length > 0) {
             const currentBal = filtered[filtered.length - 1].end;
             const initialBal = filtered[0].start;
-            document.getElementById('totalBalDisplay').innerText = `$${currentBal.toLocaleString(undefined,{minimumFractionDigits:2})}`;
+            
+            // Profit Factor calculation based on Daily PnL
+            let grossProfit = 0;
+            let grossLoss = 0;
+            filtered.forEach(e => {
+                if(e.pnl > 0) grossProfit += e.pnl;
+                else if(e.pnl < 0) grossLoss += Math.abs(e.pnl);
+            });
+
+            let profitFactor = "∞";
+            if (grossLoss > 0) {
+                profitFactor = (grossProfit / grossLoss).toFixed(2);
+            } else if (grossProfit === 0) {
+                profitFactor = "0.00";
+            }
+
+            document.getElementById('profitFactorDisplay').innerText = profitFactor;
             document.getElementById('winRateDash').innerText = `${Math.round((filtered.filter(e=>e.pnl>0).length/filtered.length)*100)}%`;
-            const netReturn = ((currentBal - initialBal) / initialBal) * 100;
+            const netReturn = initialBal > 0 ? ((currentBal - initialBal) / initialBal) * 100 : 0;
             document.getElementById('netReturnDisplay').innerText = `${netReturn.toFixed(1)}%`;
             
             let maxDD = 0, peak = initialBal;
@@ -295,6 +319,11 @@
                 if(dd > maxDD) maxDD = dd;
             });
             document.getElementById('maxDDDisplay').innerText = `-${maxDD.toFixed(1)}%`;
+        } else {
+            document.getElementById('profitFactorDisplay').innerText = "0.00";
+            document.getElementById('winRateDash').innerText = "0%";
+            document.getElementById('netReturnDisplay').innerText = "0%";
+            document.getElementById('maxDDDisplay').innerText = "0%";
         }
     }
 
@@ -365,7 +394,7 @@
         if(name && !db.accounts.includes(name)) { 
             db.accounts.push(name); 
             if (!db.selectedAccounts) db.selectedAccounts = [];
-            db.selectedAccounts.push(name); // Automatically select newly added account
+            db.selectedAccounts.push(name); 
             document.getElementById('newAccName').value = ''; 
             save(); 
             renderAccountManager(); 
@@ -381,8 +410,12 @@
             db.accounts = db.accounts.filter(a => a !== name); 
             if (db.selectedAccounts) db.selectedAccounts = db.selectedAccounts.filter(a => a !== name);
             db.entries = db.entries.filter(e => e.acc !== name); 
+            if (db.active === name) {
+                db.active = db.accounts[0];
+            }
             save(); 
             renderAccountManager(); 
+            renderChart();
         } 
     }
     
@@ -404,6 +437,7 @@
         const saved = localStorage.getItem('trade_track_v16');
         if(saved) db = JSON.parse(saved);
         if(!db.selectedAccounts) db.selectedAccounts = [...db.accounts];
+        if(!db.accounts.includes(db.active)) db.active = db.accounts[0];
         render();
         renderChart();
     };
